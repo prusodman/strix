@@ -3,7 +3,7 @@
 # \__ \ | | |   /| | >  <  | () | () |
 # |___/ |_| |_|_\___/_/\_\  \__\_/__/ 
 #
-# STRIX SOLVER  v0.1
+# STRIX SOLVER  v0.2
 # ==================
 # Developed by Prusodman Sathananthan
 # March 17th, 2024 (St. Paddy's Day lol)
@@ -15,6 +15,7 @@
 # CHANGELOG
 # =========
 # v0.1 - 20240317 __ Initial Creation
+# v0.2 - 20240323 __ Completed Single Element Logic
 #
 # X - Done
 # * - In Progress
