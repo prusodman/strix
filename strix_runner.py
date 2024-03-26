@@ -48,13 +48,13 @@ def main():
     
     #node structure [nid,X,Y,Z]
     p.n0.append([1,0,0,0])
-    p.n0.append([2,1,0,0])
-    p.n0.append([3,1,1,0])
-    p.n0.append([4,0,1,0])
-    p.n0.append([5,0,0,1])
-    p.n0.append([6,1,0,1])
-    p.n0.append([7,1,1,1])
-    p.n0.append([8,0,1,1])
+    p.n0.append([2,10,0,0])
+    p.n0.append([3,10,10,0])
+    p.n0.append([4,0,10,0])
+    p.n0.append([5,0,0,10])
+    p.n0.append([6,10,0,10])
+    p.n0.append([7,10,10,10])
+    p.n0.append([8,0,10,10])
     
     #   
     #
@@ -80,7 +80,7 @@ def main():
     # 1 - XD, 2 - YD, 3 - ZD
     # 4 - XR, 5 - YR, 6 - ZR
     
-    p.strix_explicit(0.00001,0.01,"Simple Shear Test Case")
+    p.strix_explicit(0.001,1,"Simple Shear Test Case")
     
     #print(p.elements[0].n0)
     #print(p.elements[0].n1)
@@ -89,6 +89,11 @@ def main():
     print("\nFinal stress state:")
     print("====================")
     print(p.elements[0].sig)
+    print("\n")
+    
+    print("\nFinal element force:")
+    print("====================")
+    print(p.elements[0].get_force(0,0,0))
     print("\n")
     
 if __name__ == "__main__":

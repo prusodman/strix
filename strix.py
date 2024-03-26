@@ -59,6 +59,7 @@ class strix():
         self.n1 = []
         self.elements = []
         self.bcs = []
+        self.F = []
             
     ### STRIX SOLVERS ###
     # strix explicit solver < I'm not making any more XD, explicit is da best
@@ -81,9 +82,8 @@ class strix():
         
         #solver loop
         while inc < ts:
-            #BC HANDLING
+            #BC UPDATE
             for bc in self.bcs:
-                
                 #parse bcs
                 nid = bc[0] #nodal id
                 dof = bc[1] #degree of freedom to apply BC
@@ -110,6 +110,14 @@ class strix():
                 # do not run element update until all variables are primed
                 if inc > 0:
                    ele.update(0.5)
+            
+            #FORCE UPDATE
+            for ele in self.elements:
+                for con in ele.con:
+                    #N = self.ele.get_shape_fcn(0,0,0)
+                    #frc = np.dot(ele.sig
+                    pass
+            
                 
             #INCREMENT counter, print every 100 cycles
             if inc%100 == 0:
@@ -174,11 +182,11 @@ class strix():
         ekey = self.get_elementkey (eid)
         #get lit of node keys in element
         nlist = self.get_nkey_in_element(eid)
-        #clear node list in element
-        self.elements[ekey].n1 = []
         #iterate through nodes in element and update positions
+        cntr = 0;
         for nid in nlist:
-            self.elements[ekey].n1.append(self.n1[nid][1:])
+            self.elements[ekey].n1[cntr] = self.n1[nid][1:]
+            cntr = cntr + 1;
     
     def header (self):
         return '   ___ _____ ___ _____  __   __   __   '+'\n'+\
