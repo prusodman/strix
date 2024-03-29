@@ -55,17 +55,58 @@ class strix():
     # elements = list of elements in problem
     # bcs = list of bcs in problem
     def __init__(self):
+        self.title = ""
         self.n0 = []
         self.n1 = []
         self.elements = []
         self.bcs = []
         self.F = []
+    
+    def read_file (self,fname):
+        deck = open (fname,'r')
+        lines = deck.readlines()
+        #input type
+        # 0 = none
+        # 1 = node
+        # 2 = element
+        # 3 = BC
+        #99 = title
+        itype = 0
+        count = 0 
+        for line in lines:
+            lead = line[0]
+            header = line[1:].rstrip()
+            if lead == '$':
+                pass
+            elif lead == '*':
+                if header == "NODE":
+                    itype = 1
+                elif header == "ELEMENT":
+                    itype = 2
+                elif header == "BOUNDARY_CONDITION":
+                    itype = 3
+                elif header == "TITLE":
+                    itype = 99
+                else:
+                    itype = 0
+            else:
+                data = line.rstrip().split(',')
+                cnvt = [tops.convert(flag) for flag in data]
+                if itype == 1:
+                    self.n0.append(cnvt)
+                elif itype == 2:
+                    self.elements.append(hex8(cnvt))
+                elif itype == 3:
+                    self.bcs.append(cnvt)
+                elif itype == 99:
+                    self.title = line.rstrip()
+        
             
     ### STRIX SOLVERS ###
     # strix explicit solver < I'm not making any more XD, explicit is da best
-    def strix_explicit (self,dt,Tf,title):
+    def strix_explicit (self,dt,Tf):
         print (self.header())
-        print("\n",title)
+        print("\n",self.title)
         
         tic = time.time()
         #get time step given total simulation time and timestep
@@ -101,6 +142,7 @@ class strix():
                 #elif typ == 4: #force BC (not implemented yet)
                     #TODO: code force BC 
                 else:
+                    print (typ)
                     raise Exception("ERROR: BC type not found")
             
             #ELEMENT UPDATE
@@ -187,7 +229,7 @@ class strix():
         for nid in nlist:
             self.elements[ekey].n1[cntr] = self.n1[nid][1:]
             cntr = cntr + 1;
-    
+
     def header (self):
         return '   ___ _____ ___ _____  __   __   __   '+'\n'+\
                '  / __|_   _| _ \_ _\ \/ / </  \^/  \> '+'\n'+\

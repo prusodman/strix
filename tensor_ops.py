@@ -18,3 +18,15 @@ def second_to_voigt (a):
     
 def voigt_to_second (a):
     return [[a[0],a[5],a[4]],[a[5],a[1],a[3]],[a[4],a[3],a[2]]]
+
+
+def convert(val):
+    possible = [str, int, float]
+    for func in possible:
+        try:
+            result = func(val)
+        except ValueError:
+            continue
+        if str(result) == val and type(result) is not str:
+            return result
+    return val

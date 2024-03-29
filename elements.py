@@ -126,6 +126,7 @@ class hex8 (element):
         return J
     
     #B matrix (strain displacement), (chat GPT)
+    #B = LN = 
     def get_B (self,r,s,t):
         [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)
         B = np.zeros((6, 24))
