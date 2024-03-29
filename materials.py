@@ -1,7 +1,19 @@
 import numpy as np
 
-def umat (id,deps,sig,cm):
-    if id == 1:
+# create container class to hold material data
+class material:
+    # mid = material id
+    # mat = material card
+    # cm = vars
+    def __init__(self,mid,mat,density,cm):
+        self.mid = mid
+        self.mat = mat
+        self.density = density
+        self.cm = cm
+
+#class to find and call materials
+def umat (mid,deps,sig,cm):
+    if mid == 1:
         return umat_001 (deps,sig,cm)
     else:
         raise Exception("ERROR: Mat ID not found")

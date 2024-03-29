@@ -61,6 +61,7 @@ class strix():
         self.elements = []
         self.bcs = []
         self.F = []
+        self.materials = []
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -70,6 +71,7 @@ class strix():
         # 1 = node
         # 2 = element
         # 3 = BC
+        # 4 = material
         #99 = title
         itype = 0
         count = 0 
@@ -85,6 +87,8 @@ class strix():
                     itype = 2
                 elif header == "BOUNDARY_CONDITION":
                     itype = 3
+                elif header == "MATERIAL":
+                    itype = 4
                 elif header == "TITLE":
                     itype = 99
                 else:
@@ -98,6 +102,8 @@ class strix():
                     self.elements.append(hex8(cnvt))
                 elif itype == 3:
                     self.bcs.append(cnvt)
+                elif itype == 4:
+                    self.materials.append(material(cnvt[0],cnvt[1],cnvt[2],cnvt[3:]))
                 elif itype == 99:
                     self.title = line.rstrip()
         
@@ -149,9 +155,11 @@ class strix():
             for ele in self.elements:
                 #get current positions of nodes
                 self.nodal_update(ele.eid)
+                matid = self.get_materialkey (ele.mid)
+                mat = self.materials[matid]
                 # do not run element update until all variables are primed
                 if inc > 0:
-                   ele.update(0.5)
+                   ele.update(0.5,mat)
             
             #FORCE UPDATE
             for ele in self.elements:
@@ -186,6 +194,12 @@ class strix():
         ele_id = [ele.eid for ele in self.elements]
         # find element id in list and return key
         return ele_id.index(eid)
+    
+    def get_materialkey (self,mid):
+        # make a list of element ids from materials list
+        mat_id = [mat.mid for mat in self.materials]
+        # find material id in list and return key
+        return mat_id.index(mid)
     
     # generates a list of node keys in an element
     def get_nkey_in_element (self,eid):
@@ -234,5 +248,6 @@ class strix():
         return '   ___ _____ ___ _____  __   __   __   '+'\n'+\
                '  / __|_   _| _ \_ _\ \/ / </  \^/  \> '+'\n'+\
                '  \__ \ | | |   /| | >  <  | () | () | '+'\n'+\
-               '  |___/ |_| |_|_\___/_/\_\  \__\_/__/  '+'\n'
-               
+               '  |___/ |_| |_|_\___/_/\_\  \__\_/__/  '+'\n'+\
+               '  ==================================== '+'\n'+\
+               '  Solver Version - 0.2                 '+'\n'

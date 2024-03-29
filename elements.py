@@ -16,7 +16,8 @@ from materials import *
 class element:
     def __init__(self,data):
         self.eid = data[0]
-        self.con = data[1:]
+        self.mid = data[1]
+        self.con = data[2:]
 
         
 #               HEX 8 ELEMENT
@@ -187,7 +188,7 @@ class hex8 (element):
         return np.transpose(B).dot(sigv_arr* np.linalg.det(J)).reshape((8, 3)) / 8.0
     
     #update element stresses and strains based on deformation gradient
-    def update (self,b):
+    def update (self,b,mat):
         
         self.F0 = copy.deepcopy(self.F1)
         self.F1 = self.get_def_grad(0,0,0)
@@ -212,7 +213,7 @@ class hex8 (element):
         
         deps_v = tops.second_to_voigt(self.deps)
         sig0_v = tops.second_to_voigt(self.sig)
-        sig1_v = umat(1,deps_v,sig0_v,[207000,0.3])
+        sig1_v = umat(mat.mat,deps_v,sig0_v,mat.cm)
         
         #OBJECTIVE UPDATE OF STRESS
         self.sig = tops.voigt_to_second(sig1_v)
