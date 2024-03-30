@@ -119,9 +119,12 @@ class hex8 (element):
     
     #Jacobian matrix
     def get_J (self,r,s,t):
-        coord = np.array(self.n1)
-        dNdr= self.get_dN (r,s,t)
-        return np.dot(np.transpose(coord),np.transpose(dNdr))
+        [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)
+        scl = np.array([[-1, 1, 1, -1, -1, 1, 1, -1],
+                        [-1, -1, 1, 1, -1, -1, 1, 1],
+                        [-1, -1, -1, -1, 1, 1, 1, 1]])
+        J = np.array([dN_dr, dN_ds, dN_dt]).dot(np.transpose(scl))
+        return J
     
     #B matrix (strain displacement), (chat GPT)
     #B = LN = 
