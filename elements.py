@@ -75,7 +75,7 @@ class hex8 (element):
         return u.tolist()
     
     #get shape function wrt natural coordinates (chat GPT)
-    def get_N (r,s,t):
+    def get_N (self,r,s,t):
         N = np.array([(0.125)*(1-r)*(1-s)*(1-t),
                      (0.125)*(1+r)*(1-s)*(1-t),
                      (0.125)*(1+r)*(1+s)*(1-t),
@@ -117,14 +117,11 @@ class hex8 (element):
         
         return [dN_dr,dN_ds,dN_dt]
     
-    #Jacobian matrix (chat GPT)
+    #Jacobian matrix
     def get_J (self,r,s,t):
-        [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)
-        scl = np.array([[-1, 1, 1, -1, -1, 1, 1, -1],
-                        [-1, -1, 1, 1, -1, -1, 1, 1],
-                        [-1, -1, -1, -1, 1, 1, 1, 1]])
-        J = np.array([dN_dr, dN_ds, dN_dt]).dot(np.transpose(scl))
-        return J
+        coord = np.array(self.n1)
+        dNdr= self.get_dN (r,s,t)
+        return np.dot(np.transpose(coord),np.transpose(dNdr))
     
     #B matrix (strain displacement), (chat GPT)
     #B = LN = 
@@ -182,10 +179,15 @@ class hex8 (element):
     #sense to me, it uses the strain displacement matrix, jacobian and the stresses
     # map the stresses to the 8 nodes BUT I don't understand the full underlying math...
     def get_force (self,r,s,t):
-        B = self.get_B (r,s,t)
-        J = self.get_J (r,s,t)
-        sigv_arr = np.array(tops.second_to_voigt(self.sig))
-        return np.transpose(B).dot(sigv_arr* np.linalg.det(J)).reshape((8, 3)) / 8.0
+        ## my super basic understanding here
+        ## stress*strain = volumetric energy / displacement = Force (Work = F*s)
+        ## super dumbed down, there are tensor expressions for these
+        BT = np.transpose(self.get_B (r,s,t))
+        detJ = np.linalg.det(self.get_J (r,s,t))
+        S = np.array(tops.second_to_voigt(self.sig))
+        f = np.dot(BT,S)*detJ
+        return f.reshape(8,3)
+        
     
     #update element stresses and strains based on deformation gradient
     def update (self,b,mat):

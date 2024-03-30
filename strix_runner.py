@@ -3,7 +3,7 @@ import strix as st
 def main():
     #set up a problem
     p = st.strix()
-    p.read_file("sample_decks/SS.strx")
+    p.read_file("sample_decks/UT.strx")
     #node structure [nid,X,Y,Z]
     #element structure [eid,N1,N2,N3,N4,N5,N6,N7,N8]
     
