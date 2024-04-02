@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 # create container class to hold material data
 class material:
@@ -8,8 +9,13 @@ class material:
     def __init__(self,mid,mat,density,cm):
         self.mid = mid
         self.mat = mat
-        self.density = density
+        self.density = float(density)
         self.cm = cm
+        
+    def get_c (self):
+        #cm[0] = E (Young's Modulus)
+        #cm[1] = v (Poisson's Ratio)
+        return math.sqrt ((self.cm[0]*(1-self.cm[1]))/((1+self.cm[1])*(1-2*self.cm[1])*self.density))
 
 #class to find and call materials
 def umat (mid,deps,sig,cm):
@@ -20,8 +26,8 @@ def umat (mid,deps,sig,cm):
 
 #elastic material (supa simple)
 def umat_001 (deps,sig,cm):
-    #cm[1] = E (Young's Modulus)
-    #cm[2] = v (Poisson's Ratio)
+    #cm[0] = E (Young's Modulus)
+    #cm[1] = v (Poisson's Ratio)
     
     L4 = np.array(get_L4 (cm[0],cm[1]))
     #print(L4.tolist())

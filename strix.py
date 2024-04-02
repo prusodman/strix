@@ -58,11 +58,13 @@ class strix():
         self.title = ""
         self.n0 = []
         self.n1 = []
+        self.v = []
         self.elements = []
         self.bcs = []
         self.F = []
         self.materials = []
         self.mass = []
+        self.force = []
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -111,15 +113,13 @@ class strix():
             
     ### STRIX SOLVERS ###
     # strix explicit solver < I'm not making any more XD, explicit is da best
-    def strix_explicit (self,dt,Tf):
+    def strix_explicit (self,Tf):
         print (self.header())
         print("\n",self.title)
         
         tic = time.time()
         #get time step given total simulation time and timestep
-        ts = Tf/dt
-        #initialize increment counter
-        inc = 0
+
         
         #prime past and present node values
         self.n1 = copy.deepcopy(self.n0)
@@ -129,7 +129,13 @@ class strix():
             self.nodal_init(ele.eid)
         
         self.mass_init()
+        self.v = np.zeros((len(self.n1),3))
         
+        dt = 0.1/self.materials[0].get_c()
+        
+        ts = Tf/dt
+        #initialize increment counter
+        inc = 0
         #solver loop
         while inc < ts:
             #BC UPDATE
@@ -163,25 +169,34 @@ class strix():
                 # do not run element update until all variables are primed
                 if inc > 0:
                    ele.update(0.5,mat)
-            
+                
+            ## FORCE UPDATE NEEDS WORK, RESULTS IN FEEDBACK LOOP
+            '''
             #FORCE UPDATE
-            size = len(self.n1)
-            GF = np.zeros((size,3))
-            for ele in self.elements:
-                F = ele.get_force(0,0,0)
-                cntr = 0
-                for con in ele.con:
-                    key = self.get_nodekey (con)
-                    GF[key] += F[cntr]
-                    
+            self.force_update()
             
+            cntr = 0
+            accel = np.zeros((len(self.force),3))
+            dv = np.zeros((len(self.force),3))
+            ds = np.zeros((len(self.force),3))
+            for force in self.force:
+                Fx = force[0]
+                Fy = force[1]
+                Fz = force[2]
+                m = self.mass[cntr]
+                accel [cntr] = [Fx/m,Fy/m,Fz/m]
+                self.v[cntr] = self.v[cntr] + accel [cntr] * dt
+                self.n1[cntr][1:] = self.n1[cntr][1:] + self.v[cntr] * dt
+                #print(Fz)
+                cntr = cntr + 1
+            '''
                 
             #INCREMENT counter, print every 100 cycles
             if inc%100 == 0:
                 #keep track of seconds elapsed
                 toc = time.time()
                 #print cycles and elapsed time
-                print ("Cycle ",inc,": ",round(toc-tic,1),"s elapsed")
+                print ("Cycle ",inc,":\t",round(toc-tic,1),"s elapsed"," dt={:.2e}".format(dt))
             #INCREMENT time
             inc += 1
         print ("Finished solving in ",round(toc-tic,1),"s")
@@ -248,6 +263,17 @@ class strix():
             for con in ele.con:
                 nid = self.get_nodekey(con)
                 self.mass[nid] = self.mass[nid] + nmass
+    
+    #update element forces
+    def force_update (self):
+        self.force = np.zeros((len(self.n1),3))
+        for ele in self.elements:
+            f = ele.get_force(0,0,0)
+            cntr = 0
+            for con in ele.con:
+                nid = self.get_nodekey(con)
+                self.force[nid][:] = self.force[nid][:] + f[cntr][:]
+                cntr = cntr + 1
     
     #update current nodal positions of an element
     def nodal_update (self,eid):
