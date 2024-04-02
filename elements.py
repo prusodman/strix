@@ -74,6 +74,33 @@ class hex8 (element):
         u = N @ nodes
         return u.tolist()
     
+    #from here: https://www.osti.gov/servlets/purl/632793
+    #Efficient Computation of Volume of Hexahedral Cells
+    def get_volume (self):
+        d70 = np.array(self.n1[6]) - np.array(self.n1[0])
+        d10 = np.array(self.n1[1]) - np.array(self.n1[0])
+        d40 = np.array(self.n1[4]) - np.array(self.n1[0])
+        d20 = np.array(self.n1[3]) - np.array(self.n1[0])
+        d35 = np.array(self.n1[2]) - np.array(self.n1[5])
+        d56 = np.array(self.n1[5]) - np.array(self.n1[7])
+        d63 = np.array(self.n1[7]) - np.array(self.n1[2])
+     
+        v1 = np.linalg.det(np.array([d70,d10,d35]))
+        v2 = np.linalg.det(np.array([d70,d40,d56]))
+        v3 = np.linalg.det(np.array([d70,d20,d63]))
+        v = (v1+v2+v3)/6.0
+        return v
+        
+    def get_mass (self,mat):
+        density =float(mat.density)
+        volume = float(self.get_volume())
+        print(density)
+        print(volume)
+        return volume*density
+    
+    def get_nmass (self,mat):
+        return self.get_mass(mat)/8.0
+    
     #get shape function wrt natural coordinates (chat GPT)
     def get_N (self,r,s,t):
         N = np.array([(0.125)*(1-r)*(1-s)*(1-t),
@@ -116,7 +143,7 @@ class hex8 (element):
                            0.125*(1-r)*(1+s)])
         
         return [dN_dr,dN_ds,dN_dt]
-    
+
     #Jacobian matrix
     def get_J (self,r,s,t):
         [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)

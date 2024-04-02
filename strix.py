@@ -62,6 +62,7 @@ class strix():
         self.bcs = []
         self.F = []
         self.materials = []
+        self.mass = []
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -127,6 +128,8 @@ class strix():
         for ele in self.elements:
             self.nodal_init(ele.eid)
         
+        self.mass_init()
+        
         #solver loop
         while inc < ts:
             #BC UPDATE
@@ -162,11 +165,15 @@ class strix():
                    ele.update(0.5,mat)
             
             #FORCE UPDATE
+            size = len(self.n1)
+            GF = np.zeros((size,3))
             for ele in self.elements:
+                F = ele.get_force(0,0,0)
+                cntr = 0
                 for con in ele.con:
-                    #N = self.ele.get_shape_fcn(0,0,0)
-                    #frc = np.dot(ele.sig
-                    pass
+                    key = self.get_nodekey (con)
+                    GF[key] += F[cntr]
+                    
             
                 
             #INCREMENT counter, print every 100 cycles
@@ -231,6 +238,16 @@ class strix():
             self.elements[ekey].n0.append(self.n0[nid][1:])
         #copy initial nodal positions to current nodal positions
         self.elements[ekey].n1 = copy.deepcopy(self.elements[ekey].n0)
+    
+    #fill in mass matrix
+    def mass_init (self):
+        self.mass = np.zeros((len(self.n1)))
+        for ele in self.elements:
+            mat = self.materials[self.get_materialkey(ele.mid)]
+            nmass = ele.get_nmass(mat)
+            for con in ele.con:
+                nid = self.get_nodekey(con)
+                self.mass[nid] = self.mass[nid] + nmass
     
     #update current nodal positions of an element
     def nodal_update (self,eid):
