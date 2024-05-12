@@ -92,7 +92,7 @@ class hex8 (element):
         return v
         
     def get_mass (self,mat):
-        density =float(mat.density)
+        density=float(mat.density)
         volume = float(self.get_volume())
         print(density)
         print(volume)

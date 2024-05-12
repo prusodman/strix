@@ -27,7 +27,7 @@ def main():
     #     1---------2
     #
     
-    p.strix_explicit(0.0001)
+    p.strix_explicit(p.Tf)
     
     print("\nFinal nodal coord:")
     print("====================")
@@ -44,7 +44,7 @@ def main():
     print(p.elements[0].get_force(0,0,0))
     print("\n")
 
-    print(p.force)
+    print(p.mass)
     
 if __name__ == "__main__":
     main()

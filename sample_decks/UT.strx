@@ -30,3 +30,5 @@ Uniaxial Tension Test Case
 6,3,1,2
 7,3,1,2
 8,3,1,2
+*CONTROL_TIME
+0.0001

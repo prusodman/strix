@@ -58,13 +58,15 @@ class strix():
         self.title = ""
         self.n0 = []
         self.n1 = []
-        self.v = []
         self.elements = []
         self.bcs = []
         self.F = []
         self.materials = []
         self.mass = []
         self.force = []
+        self.dt = 0.0
+        self.Tf = 0.0
+        self.T = 0.0
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -92,6 +94,8 @@ class strix():
                     itype = 3
                 elif header == "MATERIAL":
                     itype = 4
+                elif header == "CONTROL_TIME":
+                    itype = 5
                 elif header == "TITLE":
                     itype = 99
                 else:
@@ -107,6 +111,8 @@ class strix():
                     self.bcs.append(cnvt)
                 elif itype == 4:
                     self.materials.append(material(cnvt[0],cnvt[1],cnvt[2],cnvt[3:]))
+                elif itype == 5:
+                    self.Tf = cnvt[0]
                 elif itype == 99:
                     self.title = line.rstrip()
         
@@ -131,13 +137,13 @@ class strix():
         self.mass_init()
         self.v = np.zeros((len(self.n1),3))
         
-        dt = 0.1/self.materials[0].get_c()
+        self.dt = 0.1/self.materials[0].get_c()
         
-        ts = Tf/dt
+        #ts = Tf/self.dt
         #initialize increment counter
         inc = 0
         #solver loop
-        while inc < ts:
+        while self.T < Tf:
             #BC UPDATE
             for bc in self.bcs:
                 #parse bcs
@@ -153,7 +159,7 @@ class strix():
                 if typ == 1: #position BC
                    self.n1[key][dof] = self.n0[key][dof]+mag
                 elif typ == 2: #velocity BC
-                   self.n1[key][dof] = self.n1[key][dof] + mag*dt
+                   self.n1[key][dof] = self.n1[key][dof] + mag*self.dt
                 #elif typ == 4: #force BC (not implemented yet)
                     #TODO: code force BC 
                 else:
@@ -171,34 +177,35 @@ class strix():
                    ele.update(0.5,mat)
                 
             ## FORCE UPDATE NEEDS WORK, RESULTS IN FEEDBACK LOOP
-            '''
+            ## UPDATE: I think I am accounting for internal force
+            ## but not external forces, this results in runaway 
+            ## velocities, that do not get addressed
+            
             #FORCE UPDATE
             self.force_update()
-            
+        
             cntr = 0
-            accel = np.zeros((len(self.force),3))
-            dv = np.zeros((len(self.force),3))
-            ds = np.zeros((len(self.force),3))
             for force in self.force:
                 Fx = force[0]
                 Fy = force[1]
                 Fz = force[2]
                 m = self.mass[cntr]
-                accel [cntr] = [Fx/m,Fy/m,Fz/m]
-                self.v[cntr] = self.v[cntr] + accel [cntr] * dt
-                self.n1[cntr][1:] = self.n1[cntr][1:] + self.v[cntr] * dt
-                #print(Fz)
+                accel = np.array([Fx/m,Fy/m,Fz/m])
+                v = (np.array(self.n1[cntr][1:])-np.array(self.n0[cntr][1:]))/self.dt
+                print (v)
+                #self.n1[cntr][1:] = self.n1[cntr][1:] + v * self.dt
                 cntr = cntr + 1
-            '''
-                
+        
+            
             #INCREMENT counter, print every 100 cycles
-            if inc%100 == 0:
+            if inc%500 == 0:
                 #keep track of seconds elapsed
                 toc = time.time()
                 #print cycles and elapsed time
-                print ("Cycle ",inc,":\t",round(toc-tic,1),"s elapsed"," dt={:.2e}".format(dt))
+                print ("Cycle ",inc,":\t",round(toc-tic,1),"s elapsed"," dt={:.2e}".format(self.dt),"T={:}".format(self.T))
             #INCREMENT time
             inc += 1
+            self.T += self.dt
         print ("Finished solving in ",round(toc-tic,1),"s")
             
     ### TRANSLATION FUNCTIONS
@@ -272,7 +279,7 @@ class strix():
             cntr = 0
             for con in ele.con:
                 nid = self.get_nodekey(con)
-                self.force[nid][:] = self.force[nid][:] + f[cntr][:]
+                self.force[nid][:] = self.force[nid][:] + f[cntr][:]/8.0
                 cntr = cntr + 1
     
     #update current nodal positions of an element
