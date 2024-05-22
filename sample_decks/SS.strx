@@ -30,3 +30,5 @@ Simple Shear Test Case
 6,2,1,2
 7,2,1,2
 8,2,1,2
+*CONTROL_TIME
+0.0001

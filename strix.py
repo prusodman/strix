@@ -144,6 +144,12 @@ class strix():
         inc = 0
         #solver loop
         while self.T < Tf:
+            
+            # I CAN'T DO BCs LIKE THIS
+            # AFTER ASSEMBLING GLOBAL NODAL FORCE MAT
+            # I NEED TO ENFORCE BCs MANUALLY (SUM OF FORCES)
+            
+            #TO BE REMOVED
             #BC UPDATE
             for bc in self.bcs:
                 #parse bcs
@@ -165,6 +171,7 @@ class strix():
                 else:
                     print (typ)
                     raise Exception("ERROR: BC type not found")
+            #TO BE REMOVED
             
             #ELEMENT UPDATE
             for ele in self.elements:
@@ -192,7 +199,6 @@ class strix():
                 m = self.mass[cntr]
                 accel = np.array([Fx/m,Fy/m,Fz/m])
                 v = (np.array(self.n1[cntr][1:])-np.array(self.n0[cntr][1:]))/self.dt
-                print (v)
                 #self.n1[cntr][1:] = self.n1[cntr][1:] + v * self.dt
                 cntr = cntr + 1
         
@@ -202,7 +208,7 @@ class strix():
                 #keep track of seconds elapsed
                 toc = time.time()
                 #print cycles and elapsed time
-                print ("Cycle ",inc,":\t",round(toc-tic,1),"s elapsed"," dt={:.2e}".format(self.dt),"T={:}".format(self.T))
+                print ("Cycle ",inc,":\t",round(toc-tic,1),"s elapsed"," dt={:.2e}".format(self.dt),"T={:.2e}".format(self.T))
             #INCREMENT time
             inc += 1
             self.T += self.dt

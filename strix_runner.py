@@ -44,7 +44,7 @@ def main():
     print(p.elements[0].get_force(0,0,0))
     print("\n")
 
-    print(p.mass)
+    #print(p.mass)
     
 if __name__ == "__main__":
     main()
