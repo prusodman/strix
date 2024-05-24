@@ -1,5 +1,9 @@
 *TITLE
 Simple Shear Test Case
+*CONTROL_TIME
+0.0001
+*CONTROL_OUTPUT
+1000,output/SS.file
 *NODE
 1,0,0,0
 2,1,0,0
@@ -30,5 +34,3 @@ Simple Shear Test Case
 6,2,1,2
 7,2,1,2
 8,2,1,2
-*CONTROL_TIME
-0.0001

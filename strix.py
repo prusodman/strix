@@ -67,6 +67,9 @@ class strix():
         self.dt = 0.0
         self.Tf = 0.0
         self.T = 0.0
+        self.fout = 0.0
+        self.fdir = ""
+        self.sets = []
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -77,7 +80,9 @@ class strix():
         # 2 = element
         # 3 = BC
         # 4 = material
-        #99 = title
+        # 1x = controls
+        # 2x = outputs
+        # 99 = title
         itype = 0
         count = 0 
         for line in lines:
@@ -95,7 +100,11 @@ class strix():
                 elif header == "MATERIAL":
                     itype = 4
                 elif header == "CONTROL_TIME":
-                    itype = 5
+                    itype = 10
+                elif header == "CONTROL_OUTPUT":
+                    itype = 11
+                elif header == "OUTPUT_ELEMENT":
+                    itype = 20
                 elif header == "TITLE":
                     itype = 99
                 else:
@@ -111,8 +120,13 @@ class strix():
                     self.bcs.append(cnvt)
                 elif itype == 4:
                     self.materials.append(material(cnvt[0],cnvt[1],cnvt[2],cnvt[3:]))
-                elif itype == 5:
+                elif itype == 10:
                     self.Tf = cnvt[0]
+                elif itype == 11:
+                    self.fout = cnvt[0]
+                    self.fdir = cnvt[1]
+                elif itype == 20:
+                    self.sets.append(cnvt)
                 elif itype == 99:
                     self.title = line.rstrip()
         
@@ -122,6 +136,10 @@ class strix():
     def strix_explicit (self,Tf):
         print (self.header())
         print("\n",self.title)
+        
+        f = open (self.fdir,'x')
+        f.write (self.title+'\n')
+        f.close()
         
         tic = time.time()
         #get time step given total simulation time and timestep
@@ -209,10 +227,16 @@ class strix():
                 toc = time.time()
                 #print cycles and elapsed time
                 print ("Cycle ",inc,":\t",round(toc-tic,1),"s elapsed"," dt={:.2e}".format(self.dt),"T={:.2e}".format(self.T))
+            
+            #output data
+            if inc%self.fout == 0:
+                self.output_data(inc)
+                
             #INCREMENT time
             inc += 1
             self.T += self.dt
         print ("Finished solving in ",round(toc-tic,1),"s")
+        self.output_data(inc)
             
     ### TRANSLATION FUNCTIONS
     ### Get list keys (python) from node/element ids (input deck)
@@ -299,7 +323,24 @@ class strix():
         for nid in nlist:
             self.elements[ekey].n1[cntr] = self.n1[nid][1:]
             cntr = cntr + 1;
-
+            
+    def output_data (self,inc):
+        f = open (self.fdir,'a')
+        f.write("Cycle "+str(inc)+" - Time {:.2e}".format(self.T)+'\n')
+        for ele in self.elements:
+            sigout = tops.second_to_voigt(ele.sig)
+            output = ["{:.5e}".format(x) for x in sigout]
+            f.write('E'+str(ele.eid)+'\t')
+            f.write('\t'.join(output))
+            f.write('\n')
+                
+        for node in self.n1:
+            output = ["{:.5e}".format(x) for x in node[1:]]
+            f.write('N'+str(node[0])+'\t')
+            f.write('\t'.join(output))
+            f.write('\n')
+        f.close()
+                
     def header (self):
         return '   ___ _____ ___ _____  __   __   __   '+'\n'+\
                '  / __|_   _| _ \_ _\ \/ / </  \^/  \> '+'\n'+\
