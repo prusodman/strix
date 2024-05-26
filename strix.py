@@ -3,7 +3,7 @@
 # \__ \ | | |   /| | >  <  | () | () |
 # |___/ |_| |_|_\___/_/\_\  \__\_/__/ 
 #
-# STRIX SOLVER  v0.2
+# STRIX SOLVER  v0.4
 # ==================
 # Developed by Prusodman Sathananthan
 # March 17th, 2024 (St. Paddy's Day lol)
@@ -16,6 +16,8 @@
 # =========
 # v0.1 - 20240317 __ Initial Creation
 # v0.2 - 20240323 __ Completed Single Element Logic
+# v0.3 - 20240523 __ Added input deck functionality + file output
+# v0.4 - 20240524 __ Redid explicit loop (MASSIVE CHANGES)
 #
 # X - Done
 # * - In Progress
@@ -26,11 +28,12 @@
 # - get def. grad from displacements                [X]
 # - create math library to support tensor math      [X]
 # - make stress update method                       [X]
-# - understand and develop explicit loop            [ ]
-#   > determine internal forces in element          [ ]
+# - understand and develop explicit loop            [X]
+#   > determine internal forces in element          [X]
 #   > compute external forces                       [ ]
 # - get strain and strain rate to feed into UMATS   [X]
 # - develop elastic UMAT                            [X]
+# - refactor and clean up                           [O]
 # - comment what you have so far...                 [O]
 #
 #
@@ -56,20 +59,25 @@ class strix():
     # bcs = list of bcs in problem
     def __init__(self):
         self.title = ""
-        self.n0 = []
-        self.n1 = []
+        
+        self.n0 = [] #position
+        self.u = [] #displacement
+        self.v = [] #velocity
+        self.a = [] #acceleration
+        self.mass = []
+        
+        self.Fint = []
+        self.Fext = []
+        
         self.elements = []
         self.bcs = []
-        self.F = []
         self.materials = []
-        self.mass = []
-        self.force = []
+        
         self.dt = 0.0
         self.Tf = 0.0
         self.T = 0.0
         self.fout = 0.0
         self.fdir = ""
-        self.sets = []
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -121,7 +129,7 @@ class strix():
                 elif itype == 4:
                     self.materials.append(material(cnvt[0],cnvt[1],cnvt[2],cnvt[3:]))
                 elif itype == 10:
-                    self.Tf = cnvt[0]
+                    self.Tf = float(cnvt[0])
                 elif itype == 11:
                     self.fout = cnvt[0]
                     self.fdir = cnvt[1]
@@ -134,92 +142,24 @@ class strix():
     ### STRIX SOLVERS ###
     # strix explicit solver < I'm not making any more XD, explicit is da best
     def strix_explicit (self,Tf):
-        print (self.header())
-        print("\n",self.title)
         
-        f = open (self.fdir,'x')
-        f.write (self.title+'\n')
-        f.close()
-        
+        self.initialize()
         tic = time.time()
-        #get time step given total simulation time and timestep
-
-        
-        #prime past and present node values
-        self.n1 = copy.deepcopy(self.n0)
-        
-        #initialize positions in element
-        for ele in self.elements:
-            self.nodal_init(ele.eid)
-        
-        self.mass_init()
-        self.v = np.zeros((len(self.n1),3))
-        
-        self.dt = 0.1/self.materials[0].get_c()
         
         #ts = Tf/self.dt
         #initialize increment counter
         inc = 0
         #solver loop
         while self.T < Tf:
+    
+            self.update_velocity()
+            self.update_disp()
+            self.enforce_bcs()
+            self.update_elements(inc)
             
-            # I CAN'T DO BCs LIKE THIS
-            # AFTER ASSEMBLING GLOBAL NODAL FORCE MAT
-            # I NEED TO ENFORCE BCs MANUALLY (SUM OF FORCES)
-            
-            #TO BE REMOVED
-            #BC UPDATE
-            for bc in self.bcs:
-                #parse bcs
-                nid = bc[0] #nodal id
-                dof = bc[1] #degree of freedom to apply BC
-                mag = bc[2] #magnitude of BC (postion, velocity ...)
-                typ = bc[3] #type of BC
-                
-                #get node key from node id (these are separate)
-                key = self.get_nodekey(nid)
-                
-                #apply boundary condition based on type
-                if typ == 1: #position BC
-                   self.n1[key][dof] = self.n0[key][dof]+mag
-                elif typ == 2: #velocity BC
-                   self.n1[key][dof] = self.n1[key][dof] + mag*self.dt
-                #elif typ == 4: #force BC (not implemented yet)
-                    #TODO: code force BC 
-                else:
-                    print (typ)
-                    raise Exception("ERROR: BC type not found")
-            #TO BE REMOVED
-            
-            #ELEMENT UPDATE
-            for ele in self.elements:
-                #get current positions of nodes
-                self.nodal_update(ele.eid)
-                matid = self.get_materialkey (ele.mid)
-                mat = self.materials[matid]
-                # do not run element update until all variables are primed
-                if inc > 0:
-                   ele.update(0.5,mat)
-                
-            ## FORCE UPDATE NEEDS WORK, RESULTS IN FEEDBACK LOOP
-            ## UPDATE: I think I am accounting for internal force
-            ## but not external forces, this results in runaway 
-            ## velocities, that do not get addressed
-            
-            #FORCE UPDATE
-            self.force_update()
-        
-            cntr = 0
-            for force in self.force:
-                Fx = force[0]
-                Fy = force[1]
-                Fz = force[2]
-                m = self.mass[cntr]
-                accel = np.array([Fx/m,Fy/m,Fz/m])
-                v = (np.array(self.n1[cntr][1:])-np.array(self.n0[cntr][1:]))/self.dt
-                #self.n1[cntr][1:] = self.n1[cntr][1:] + v * self.dt
-                cntr = cntr + 1
-        
+            self.update_internalF ()
+            self.update_externalF ()
+            self.update_acceleration()
             
             #INCREMENT counter, print every 100 cycles
             if inc%500 == 0:
@@ -235,8 +175,141 @@ class strix():
             #INCREMENT time
             inc += 1
             self.T += self.dt
+            
         print ("Finished solving in ",round(toc-tic,1),"s")
         self.output_data(inc)
+        
+    def initialize(self):
+        print (self.header())
+        print("\n",self.title)
+        
+        f = open (self.fdir,'w')
+        f.write (self.header()+'\n')
+        f.write (self.title+'\n')
+        f.close()
+         
+        #number of nodes (for matricies)
+        nnum = len(self.n0)
+        
+        #prime kinematics
+        self.u = np.zeros((nnum,3))
+        self.v = np.zeros((nnum,3))
+        self.a = np.zeros((nnum,3))
+        
+        #prime forces
+        self.Fint = np.zeros((nnum,3))
+        self.Fext = np.zeros((nnum,3))
+        
+        self.mass_init()
+
+        self.dt = 0.1/self.materials[0].get_c()
+    
+    def update_velocity (self):
+        #number of nodes (for matricies)
+        nnum = len(self.n0)
+        for ind in range (nnum):
+            self.v[ind] = self.v[ind] + self.dt*self.a[ind]
+        
+    def update_disp (self):
+        #number of nodes (for matricies)
+        nnum = len(self.n0)
+        for ind in range (nnum):
+            self.u[ind] = self.u[ind] + self.dt*self.v[ind]
+            
+    def enforce_bcs (self):
+        for bc in self.bcs:
+            #parse bcs
+            nid = bc[0] #nodal id
+            dof = bc[1] - 1 #degree of freedom to apply BC
+            mag = bc[2] #magnitude of BC (postion, velocity ...)
+            typ = bc[3] #type of BC
+            
+            #get node key from node id (these are separate)
+            key = self.get_nodekey(nid)
+            
+            #apply boundary condition based on type
+            if typ == 1: #position BC
+                self.u[key][dof] = mag
+                self.v[key][dof] = 0.0
+                self.a[key][dof] = 0.0
+            elif typ == 2: #velocity BC
+                #undo velocity 
+                self.u[key][dof] = self.u[key][dof] - self.v[key][dof]*self.dt
+                self.v[key][dof] = mag
+                self.a[key][dof] = 0.0
+                #apply new velocity
+                self.u[key][dof] = self.u[key][dof] + self.v[key][dof]*self.dt
+            #elif typ == 4: #force BC (not implemented yet)
+                #TODO: code force BC 
+            else:
+                print (typ)
+                raise Exception("ERROR: BC type not found")
+        
+    def update_internalF (self):
+        nnum = len(self.n0)
+        self.Fint = np.zeros((nnum,3))
+        for ele in self.elements:
+            f = ele.get_force(0,0,0)
+            cntr = 0
+            for con in ele.con:
+                nid = self.get_nodekey(con)
+                self.Fint[nid][:] = self.Fint[nid][:] + f[cntr][:]/8.0
+                cntr = cntr + 1
+    
+    def update_externalF (self):
+        nnum = len(self.n0)
+        self.Fext = np.zeros((nnum,3))
+        
+        for bc in self.bcs:
+            #parse bcs
+            nid = bc[0] #nodal id
+            dof = bc[1]-1 #degree of freedom to apply BC
+            mag = bc[2] #magnitude of BC (postion, velocity ...)
+            typ = bc[3] #type of BC
+            
+            #get node key from node id (these are separate)
+            key = self.get_nodekey(nid)
+            
+            #apply boundary condition based on type
+            if typ == 1: #position BC
+                self.Fext [key][dof] = -self.Fint [key][dof]
+            elif typ == 2: #velocity BC
+                self.Fext [key][dof] = -self.Fint [key][dof]
+            #elif typ == 4: #force BC (not implemented yet)
+                #TODO: code force BC 
+            else:
+                print (typ)
+                raise Exception("ERROR: BC type not found")
+                
+            
+    def update_acceleration (self):
+        #number of nodes (for matricies)
+        nnum = len(self.n0)
+        for ind in range (nnum):
+            self.a[ind] = (self.Fext[ind] - self.Fint[ind])/self.mass[ind]
+
+    def update_elements (self,inc):
+        for ele in self.elements:
+            #get material of element
+            matid = self.get_materialkey (ele.mid)
+            mat = self.materials[matid]
+            
+            #get list of node keys in element
+            nlist = self.get_nkey_in_element(ele.eid)
+            
+            #generate list of element initial positions and displacements
+            cntr = 0;
+            U = np.zeros((8,3))
+            P0 = np.zeros((8,3))
+            for nid in nlist:
+                P0[cntr][:] = self.n0[nid][1:]
+                U[cntr][:] = self.u[nid][:]
+                cntr+=1
+            
+            # do not run element update until all variables are primed
+            if inc > 0:
+                ele.update(0.5,mat,U,U+P0)
+    
             
     ### TRANSLATION FUNCTIONS
     ### Get list keys (python) from node/element ids (input deck)
@@ -276,69 +349,64 @@ class strix():
     ### updates nodal values of elements in current problem
     #TODO: Instead of clearing and readding nodes, try to update node values
     
-    #initiates initial nodal positions of an element
-    def nodal_init (self,eid):
-        #get element key
-        ekey = self.get_elementkey (eid)
-        #get list of node keys in element
-        nlist = self.get_nkey_in_element(eid)
-        #clear node list in element
-        self.elements[ekey].n0 = []
-        #iterate through nodes in element
-        for nid in nlist:
-            #add nodes to element
-            self.elements[ekey].n0.append(self.n0[nid][1:])
-        #copy initial nodal positions to current nodal positions
-        self.elements[ekey].n1 = copy.deepcopy(self.elements[ekey].n0)
-    
     #fill in mass matrix
     def mass_init (self):
-        self.mass = np.zeros((len(self.n1)))
+        nnum = len(self.n0)
+        self.mass = np.zeros((nnum))
         for ele in self.elements:
             mat = self.materials[self.get_materialkey(ele.mid)]
-            nmass = ele.get_nmass(mat)
+            
+            
+            #get list of node keys in element
+            nlist = self.get_nkey_in_element(ele.eid)
+            
+            #generate list of element initial positions and displacements
+            cntr = 0;
+            U = np.zeros((8,3))
+            P0 = np.zeros((8,3))
+            for nid in nlist:
+                P0[cntr][:] = self.n0[nid][1:]
+                U[cntr][:] = self.u[nid][:]
+                cntr+=1
+            
+            P = U + P0
+            nmass = ele.get_nmass(mat,P)
             for con in ele.con:
                 nid = self.get_nodekey(con)
                 self.mass[nid] = self.mass[nid] + nmass
     
-    #update element forces
-    def force_update (self):
-        self.force = np.zeros((len(self.n1),3))
-        for ele in self.elements:
-            f = ele.get_force(0,0,0)
-            cntr = 0
-            for con in ele.con:
-                nid = self.get_nodekey(con)
-                self.force[nid][:] = self.force[nid][:] + f[cntr][:]/8.0
-                cntr = cntr + 1
-    
-    #update current nodal positions of an element
-    def nodal_update (self,eid):
-        #get element key
-        ekey = self.get_elementkey (eid)
-        #get lit of node keys in element
-        nlist = self.get_nkey_in_element(eid)
-        #iterate through nodes in element and update positions
-        cntr = 0;
-        for nid in nlist:
-            self.elements[ekey].n1[cntr] = self.n1[nid][1:]
-            cntr = cntr + 1;
-            
     def output_data (self,inc):
         f = open (self.fdir,'a')
-        f.write("Cycle "+str(inc)+" - Time {:.2e}".format(self.T)+'\n')
+        f.write(">Cycle "+str(inc)+" - Time {:.2e}".format(self.T)+'\n')
         for ele in self.elements:
             sigout = tops.second_to_voigt(ele.sig)
-            output = ["{:.5e}".format(x) for x in sigout]
+            output = ["{:.5e}".format(x).rjust(14) for x in sigout]
             f.write('E'+str(ele.eid)+'\t')
             f.write('\t'.join(output))
             f.write('\n')
                 
-        for node in self.n1:
-            output = ["{:.5e}".format(x) for x in node[1:]]
-            f.write('N'+str(node[0])+'\t')
+        P = np.array(self.n0)
+        P[:,1:] = P[:,1:] + self.u
+        
+        #for node in P:
+        #    output = ["{:.10e}".format(x) for x in node[1:]]
+        #    f.write('N'+str(node[0])+'\t')
+        #    f.write('\t'.join(output))
+        #    f.write('\n')
+        
+        for i in range (len(self.n0)):
+            output = ["{:.5e}".format(x).rjust(14) for x in P[i,1:]]
+            f.write('N'+str(P[i,0])+'\t')
             f.write('\t'.join(output))
             f.write('\n')
+        
+        for i in range (len(self.n0)):
+            output = ["{:.5e}".format(x).rjust(14) for x in self.u[i,:]]
+            f.write('U'+str(P[i,0])+'\t')
+            f.write('\t'.join(output))
+            f.write('\n')
+        
+        f.write("\n")
         f.close()
                 
     def header (self):
@@ -347,4 +415,4 @@ class strix():
                '  \__ \ | | |   /| | >  <  | () | () | '+'\n'+\
                '  |___/ |_| |_|_\___/_/\_\  \__\_/__/  '+'\n'+\
                '  ==================================== '+'\n'+\
-               '  Solver Version - 0.2                 '+'\n'
+               '  Solver Version - 0.4                 '+'\n'

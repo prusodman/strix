@@ -22,6 +22,7 @@ def voigt_to_second (a):
 
 def convert(val):
     possible = [str, int, float]
+    val = val.rstrip()
     for func in possible:
         try:
             result = func(val)

@@ -40,8 +40,6 @@ class hex8 (element):
         #call parent initializer
         super().__init__(data)
         #define space to place nodal data
-        self.n0 = [] # original nodal coordinates
-        self.n1 = [] # current nodal coordinates
         #define space to place deformation gradients
         self.F0 = np.identity(3)
         self.F1 = np.identity(3)
@@ -52,38 +50,16 @@ class hex8 (element):
         #define space to place history vars
         self.hisv = []*8
     
-    #get nodal displacements (for all 8 nodes in element)
-    def get_nodal_displacement (self):
-        #convert node lists into arrays to perform math
-        pos0 = np.array(self.n0)
-        pos1 = np.array(self.n1)
-        #return displacements
-        return pos1 - pos0
-    
-    #convert position list to array for math reasons
-    def get_nodal_positions (self):
-        return np.array(self.n1)
-    
-    #get displacement within element using shape function interpolation
-    def get_displacement (self,r,s,t):
-        #nodal displacement
-        nodes = np.array(self.get_nodal_displacement())
-        #get shape function
-        N = self.get_N (r,s,t)
-        #interpolate
-        u = N @ nodes
-        return u.tolist()
-    
     #from here: https://www.osti.gov/servlets/purl/632793
     #Efficient Computation of Volume of Hexahedral Cells
-    def get_volume (self):
-        d70 = np.array(self.n1[6]) - np.array(self.n1[0])
-        d10 = np.array(self.n1[1]) - np.array(self.n1[0])
-        d40 = np.array(self.n1[4]) - np.array(self.n1[0])
-        d20 = np.array(self.n1[3]) - np.array(self.n1[0])
-        d35 = np.array(self.n1[2]) - np.array(self.n1[5])
-        d56 = np.array(self.n1[5]) - np.array(self.n1[7])
-        d63 = np.array(self.n1[7]) - np.array(self.n1[2])
+    def get_volume (self,P):
+        d70 = np.array(P[6]) - np.array(P[0])
+        d10 = np.array(P[1]) - np.array(P[0])
+        d40 = np.array(P[4]) - np.array(P[0])
+        d20 = np.array(P[3]) - np.array(P[0])
+        d35 = np.array(P[2]) - np.array(P[5])
+        d56 = np.array(P[5]) - np.array(P[7])
+        d63 = np.array(P[7]) - np.array(P[2])
      
         v1 = np.linalg.det(np.array([d70,d10,d35]))
         v2 = np.linalg.det(np.array([d70,d40,d56]))
@@ -91,13 +67,13 @@ class hex8 (element):
         v = (v1+v2+v3)/6.0
         return v
         
-    def get_mass (self,mat):
+    def get_mass (self,mat,P):
         density=float(mat.density)
-        volume = float(self.get_volume())
+        volume = float(self.get_volume(P))
         return volume*density
     
-    def get_nmass (self,mat):
-        return self.get_mass(mat)/8.0
+    def get_nmass (self,mat,P):
+        return self.get_mass(mat,P)/8.0
     
     #get shape function wrt natural coordinates (chat GPT)
     def get_N (self,r,s,t):
@@ -171,10 +147,8 @@ class hex8 (element):
     #get deformation gradient using method described here:
     #https://www.continuummechanics.org/finiteelementmapping.html
     #TODO: can I simplify this with the N / dN matrices
-    def get_def_grad (self,r,s,t):
+    def get_def_grad (self,r,s,t,U,P):
         #get nodal positions and displacement
-        U = self.get_nodal_displacement()
-        P = self.get_nodal_positions()
         
         #initialize matrix of derivatives
         dispDbasis = np.zeros((3,3)) #(du/dr)
@@ -218,10 +192,10 @@ class hex8 (element):
         
     
     #update element stresses and strains based on deformation gradient
-    def update (self,b,mat):
+    def update (self,b,mat,n0,n1):
         
         self.F0 = copy.deepcopy(self.F1)
-        self.F1 = self.get_def_grad(0,0,0)
+        self.F1 = self.get_def_grad(0,0,0,n0,n1)
 
         dF = self.F1-self.F0
         #b = 0 backwards
