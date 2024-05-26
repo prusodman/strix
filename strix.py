@@ -253,7 +253,7 @@ class strix():
             cntr = 0
             for con in ele.con:
                 nid = self.get_nodekey(con)
-                self.Fint[nid][:] = self.Fint[nid][:] + f[cntr][:]/8.0
+                self.Fint[nid][:] = self.Fint[nid][:] + f[cntr][:]
                 cntr = cntr + 1
     
     def update_externalF (self):
@@ -403,6 +403,18 @@ class strix():
         for i in range (len(self.n0)):
             output = ["{:.5e}".format(x).rjust(14) for x in self.u[i,:]]
             f.write('U'+str(P[i,0])+'\t')
+            f.write('\t'.join(output))
+            f.write('\n')
+        
+        for i in range (len(self.n0)):
+            output = ["{:.5e}".format(x).rjust(14) for x in self.Fext[i,:]]
+            f.write('FE'+str(P[i,0])+'\t')
+            f.write('\t'.join(output))
+            f.write('\n')
+        
+        for i in range (len(self.n0)):
+            output = ["{:.5e}".format(x).rjust(14) for x in self.Fint[i,:]]
+            f.write('FI'+str(P[i,0])+'\t')
             f.write('\t'.join(output))
             f.write('\n')
         

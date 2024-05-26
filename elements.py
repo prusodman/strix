@@ -181,13 +181,15 @@ class hex8 (element):
     #sense to me, it uses the strain displacement matrix, jacobian and the stresses
     # map the stresses to the 8 nodes BUT I don't understand the full underlying math...
     def get_force (self,r,s,t):
+        #weight of each gauss point for single integration point element
+        gauss_weight = 1.0
         ## my super basic understanding here
         ## stress*strain = volumetric energy / displacement = Force (Work = F*s)
         ## super dumbed down, there are tensor expressions for these
         BT = np.transpose(self.get_B (r,s,t))
         detJ = np.linalg.det(self.get_J (r,s,t))
         S = np.array(tops.second_to_voigt(self.sig))
-        f = np.dot(BT,S)*detJ
+        f = gauss_weight*np.dot(BT,S)*detJ
         return f.reshape(8,3)
         
     
