@@ -18,7 +18,7 @@ class material:
         return math.sqrt ((self.cm[0]*(1-self.cm[1]))/((1+self.cm[1])*(1-2*self.cm[1])*self.density))
 
 #class to find and call materials
-def umat (mid,deps,sig,cm):
+def umat (mid,deps,sig,cm,hisv):
     if mid == 1:
         return umat_001 (deps,sig,cm)
     else:

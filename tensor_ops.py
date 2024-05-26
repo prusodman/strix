@@ -19,7 +19,6 @@ def second_to_voigt (a):
 def voigt_to_second (a):
     return [[a[0],a[5],a[4]],[a[5],a[1],a[3]],[a[4],a[3],a[2]]]
 
-
 def convert(val):
     possible = [str, int, float]
     val = val.rstrip()

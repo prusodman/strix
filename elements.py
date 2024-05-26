@@ -75,6 +75,10 @@ class hex8 (element):
     def get_nmass (self,mat,P):
         return self.get_mass(mat,P)/8.0
     
+    def get_dt (self,mat,P):
+        V = self.get_volume(self,P)
+        
+    
     #get shape function wrt natural coordinates (chat GPT)
     def get_N (self,r,s,t):
         N = np.array([(0.125)*(1-r)*(1-s)*(1-t),
@@ -219,7 +223,7 @@ class hex8 (element):
         
         deps_v = tops.second_to_voigt(self.deps)
         sig0_v = tops.second_to_voigt(self.sig)
-        sig1_v = umat(mat.mat,deps_v,sig0_v,mat.cm)
+        sig1_v = umat(mat.mat,deps_v,sig0_v,mat.cm,self.hisv)
         
         #OBJECTIVE UPDATE OF STRESS
         self.sig = tops.voigt_to_second(sig1_v)
