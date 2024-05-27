@@ -123,7 +123,10 @@ class strix():
                 if itype == 1:
                     self.n0.append(cnvt)
                 elif itype == 2:
-                    self.elements.append(hex8(cnvt))
+                    nargs = len (cnvt)
+                    #if 10 args, its a hex8
+                    if nargs == 10:
+                        self.elements.append(hex8(cnvt))
                 elif itype == 3:
                     self.bcs.append(cnvt)
                 elif itype == 4:
@@ -385,8 +388,9 @@ class strix():
             f.write('\t'.join(output))
             f.write('\n')
                 
-        P = np.array(self.n0)
-        P[:,1:] = P[:,1:] + self.u
+        nnum = [item[0] for item in self.n0]
+        P0 = np.array(self.n0)
+        P = np.add(P0[:,1:],self.u)
         
         #for node in P:
         #    output = ["{:.10e}".format(x) for x in node[1:]]
@@ -395,26 +399,26 @@ class strix():
         #    f.write('\n')
         
         for i in range (len(self.n0)):
-            output = ["{:.5e}".format(x).rjust(14) for x in P[i,1:]]
-            f.write('N'+str(P[i,0])+'\t')
+            output = ["{:.5e}".format(x).rjust(14) for x in P[i,:]]
+            f.write('N'+str(nnum[i])+'\t')
             f.write('\t'.join(output))
             f.write('\n')
         
         for i in range (len(self.n0)):
             output = ["{:.5e}".format(x).rjust(14) for x in self.u[i,:]]
-            f.write('U'+str(P[i,0])+'\t')
+            f.write('U'+str(nnum[i])+'\t')
             f.write('\t'.join(output))
             f.write('\n')
         
         for i in range (len(self.n0)):
             output = ["{:.5e}".format(x).rjust(14) for x in self.Fext[i,:]]
-            f.write('FE'+str(P[i,0])+'\t')
+            f.write('FE'+str(nnum[i])+'\t')
             f.write('\t'.join(output))
             f.write('\n')
         
         for i in range (len(self.n0)):
             output = ["{:.5e}".format(x).rjust(14) for x in self.Fint[i,:]]
-            f.write('FI'+str(P[i,0])+'\t')
+            f.write('FI'+str(nnum[i])+'\t')
             f.write('\t'.join(output))
             f.write('\n')
         
