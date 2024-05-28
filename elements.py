@@ -31,10 +31,10 @@ class element:
         self.hisv = []*8
     
     #update element stresses and strains based on deformation gradient
-    def update (self,b,mat,n0,n1):
+    def update (self,b,mat,P0,P):
         
         self.F0 = copy.deepcopy(self.F1)
-        self.F1 = self.get_def_grad(0,0,0,n0,n1)
+        self.F1 = self.get_def_grad(n0,n1)
 
         dF = self.F1-self.F0
         #b = 0 backwards
@@ -61,39 +61,6 @@ class element:
         #OBJECTIVE UPDATE OF STRESS
         self.sig = tops.voigt_to_second(sig1_v)
         self.sig = self.sig - self.sig @ R + R * self.sig
-    
-    #get deformation gradient using method described here:
-    #https://www.continuummechanics.org/finiteelementmapping.html
-    #TODO: can I simplify this with the N / dN matrices
-    def get_def_grad (self,r,s,t,U,P):
-        #get nodal positions and displacement
-        
-        #initialize matrix of derivatives
-        dispDbasis = np.zeros((3,3)) #(du/dr)
-        posiDbasis = np.zeros((3,3)) #(dX/dr)
-        
-        #determine sign for term
-        #r toggles every two elements (- ++ -- ++ -)
-        #s toggles every two elements (-- ++ -- ++)
-        #t toggles every four elements (---- ++++)
-        m = [[-1,1,1,-1,-1,1,1,-1],
-             [-1,-1,1,1,-1,-1,1,1],
-             [-1,-1,-1,-1,1,1,1,1]]
-        
-        #i = displacement/position (u,v,w or X,Y,Z)
-        #j = basis function (r,s,t)
-        #node = node number
-        for i in range(0,3):
-            for j in range (0,3):
-                for node in range (0,8):
-                    #DEBUGGING output    
-                    #print(i,j,node,m[j][node])
-                    #assemble terms in each derivative
-                    dispDbasis [i][j] += m[j][node]*U[node][i]
-                    posiDbasis [i][j] += m[j][node]*P[node][i]
-        #return def. grad
-        # F = I + [du/dr]*inv([dX/dr])
-        return np.identity(3) +  dispDbasis @ np.linalg.inv(posiDbasis)
         
 
         
@@ -135,7 +102,7 @@ class hex8 (element):
         return v
         
     def get_mass (self,mat,P):
-        density=float(mat.density)
+        density = float(mat.density)
         volume = float(self.get_volume(P))
         return volume*density
     
@@ -218,7 +185,7 @@ class hex8 (element):
     #get deformation gradient using method described here:
     #https://www.continuummechanics.org/finiteelementmapping.html
     #TODO: can I simplify this with the N / dN matrices
-    def get_def_grad (self,r,s,t,U,P):
+    def get_def_grad (self,U,P):
         #get nodal positions and displacement
         
         #initialize matrix of derivatives
@@ -248,15 +215,15 @@ class hex8 (element):
         # F = I + [du/dr]*inv([dX/dr])
         return np.identity(3) +  dispDbasis @ np.linalg.inv(posiDbasis)
     
-    #is detJ actually the volume
-    def get_force (self,r,s,t):
+    #is detJ actually the volume (I DON'T THINK IT IS)
+    def get_force (self,U,P):
         #weight of each gauss point for single integration point element
         gauss_weight = 1.0
         ## my super basic understanding here
         ## stress*strain = volumetric energy / displacement = Force (Work = F*s)
         ## super dumbed down, there are tensor expressions for these
-        BT = np.transpose(self.get_B (r,s,t))
-        detJ = np.linalg.det(self.get_J (r,s,t))
+        BT = np.transpose(self.get_B (0,0,0))
+        detJ = np.linalg.det(self.get_J (0,0,0))
         S = np.array(tops.second_to_voigt(self.sig))
         f = gauss_weight*np.dot(BT,S)*detJ
         return f.reshape(8,3)
@@ -283,7 +250,8 @@ class hex8 (element):
 #
 #
 #
-#SINGLE INTEGRATION POINT HEX ELEMENT
+#SINGLE INTEGRATION POINT TET ELEMENT
+# UNTESTED!!
 class tet4 (element):
     def __init__(self,data):
         #call parent initializer
@@ -301,10 +269,43 @@ class tet4 (element):
             [ 0,  0,  1]
         ])
     
-    def get_force (self, P):
+    def get_force (self, P,U):
         V = self.get_volume (P)
         B = self.get_dN ()
         nodal_forces = np.zeros((4, 3))  # 4 nodes, 3 force components per node
         for i in range(4):
-            nodal_forces[i, :] = V * np.dot(B[i, :], stress_tensor)
+            nodal_forces[i, :] = V * np.dot(B[i, :], self.sig)
         return nodal_forces
+    
+    #get deformation gradient using method described here:
+    #https://www.continuummechanics.org/finiteelementmapping.html
+    #TODO: can I simplify this with the N / dN matrices
+    def get_def_grad (self,U,P):
+        #get nodal positions and displacement
+        
+        #initialize matrix of derivatives
+        dispDbasis = np.zeros((3,3)) #(du/dr)
+        posiDbasis = np.zeros((3,3)) #(dX/dr)
+        
+        #determine sign for term
+        #r toggles every two elements (- ++ -- ++ -)
+        #s toggles every two elements (-- ++ -- ++)
+        #t toggles every four elements (---- ++++)
+        m = [[-1,1,1,-1,-1,1,1,-1],
+             [-1,-1,1,1,-1,-1,1,1],
+             [-1,-1,-1,-1,1,1,1,1]]
+        
+        #i = displacement/position (u,v,w or X,Y,Z)
+        #j = basis function (r,s,t)
+        #node = node number
+        for i in range(0,3):
+            for j in range (0,3):
+                for node in range (0,8):
+                    #DEBUGGING output    
+                    #print(i,j,node,m[j][node])
+                    #assemble terms in each derivative
+                    dispDbasis [i][j] += m[j][node]*U[node][i]
+                    posiDbasis [i][j] += m[j][node]*P[node][i]
+        #return def. grad
+        # F = I + [du/dr]*inv([dX/dr])
+        return np.identity(3) +  dispDbasis @ np.linalg.inv(posiDbasis)

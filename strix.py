@@ -251,8 +251,23 @@ class strix():
     def update_internalF (self):
         nnum = len(self.n0)
         self.Fint = np.zeros((nnum,3))
+        
         for ele in self.elements:
-            f = ele.get_force(0,0,0)
+            
+            #REFACTOR!!!
+            #get list of node keys in element
+            nlist = self.get_nkey_in_element(ele.eid)
+            
+            #generate list of element initial positions and displacements
+            cntr = 0;
+            U = np.zeros((8,3))
+            P0 = np.zeros((8,3))
+            for nid in nlist:
+                P0[cntr][:] = self.n0[nid][1:]
+                U[cntr][:] = self.u[nid][:]
+                cntr+=1
+                
+            f = ele.get_force(U,U+P0)
             cntr = 0
             for con in ele.con:
                 nid = self.get_nodekey(con)
