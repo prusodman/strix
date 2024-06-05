@@ -31,10 +31,9 @@ class element:
         self.hisv = []*8
     
     #update element stresses and strains based on deformation gradient
-    def update (self,b,mat,P0,P):
-        
+    def update (self,b,mat,P,U):
         self.F0 = copy.deepcopy(self.F1)
-        self.F1 = self.get_def_grad(n0,n1)
+        self.F1 = self.get_def_grad(P,U)
 
         dF = self.F1-self.F0
         #b = 0 backwards
@@ -83,6 +82,7 @@ class hex8 (element):
     def __init__(self,data):
         #call parent initializer
         super().__init__(data)
+        self.nnum = 8
     
     #from here: https://www.osti.gov/servlets/purl/632793
     #Efficient Computation of Volume of Hexahedral Cells
@@ -184,8 +184,9 @@ class hex8 (element):
     
     #get deformation gradient using method described here:
     #https://www.continuummechanics.org/finiteelementmapping.html
-    #TODO: can I simplify this with the N / dN matrices
-    def get_def_grad (self,U,P):
+    #I NEED TO CALCULATE THIS
+    def get_def_grad (self,P,U):
+        # def get_def_grad (self,U,P):
         #get nodal positions and displacement
         
         #initialize matrix of derivatives
@@ -256,10 +257,23 @@ class tet4 (element):
     def __init__(self,data):
         #call parent initializer
         super().__init__(data)
+        self.nnum = 4
     
     def get_volume (self,P):
         return np.abs(np.dot(P[0] - P[3], np.cross(P[1] - P[3], P[2] - P[3]))) / 6.0
-
+    
+    def get_mass (self,mat,P):
+        density = float(mat.density)
+        volume = float(self.get_volume(P))
+        return volume*density
+    
+    def get_nmass (self,mat,P):
+        print (self.get_mass(mat,P))
+        return self.get_mass(mat,P)/4.0
+    
+    def get_dt (self,mat,P):
+        V = self.get_volume(self,P)
+    
     def get_dN (self):
          # Derivatives of the shape functions with respect to local coordinates
         return np.array([
@@ -277,9 +291,6 @@ class tet4 (element):
             nodal_forces[i, :] = V * np.dot(B[i, :], self.sig)
         return nodal_forces
     
-    #get deformation gradient using method described here:
-    #https://www.continuummechanics.org/finiteelementmapping.html
-    #TODO: can I simplify this with the N / dN matrices
     def get_def_grad (self,U,P):
         #get nodal positions and displacement
         
@@ -288,19 +299,16 @@ class tet4 (element):
         posiDbasis = np.zeros((3,3)) #(dX/dr)
         
         #determine sign for term
-        #r toggles every two elements (- ++ -- ++ -)
-        #s toggles every two elements (-- ++ -- ++)
-        #t toggles every four elements (---- ++++)
-        m = [[-1,1,1,-1,-1,1,1,-1],
-             [-1,-1,1,1,-1,-1,1,1],
-             [-1,-1,-1,-1,1,1,1,1]]
+        m = [[1,0,0,-1],
+             [0,1,0,-1],
+             [0,0,1,-1]]
         
         #i = displacement/position (u,v,w or X,Y,Z)
         #j = basis function (r,s,t)
         #node = node number
         for i in range(0,3):
             for j in range (0,3):
-                for node in range (0,8):
+                for node in range (0,4):
                     #DEBUGGING output    
                     #print(i,j,node,m[j][node])
                     #assemble terms in each derivative

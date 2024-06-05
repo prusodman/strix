@@ -40,6 +40,7 @@
 #
 import numpy as np
 import time
+import datetime
 import copy
 import tensor_ops as tops
 from elements import *
@@ -101,7 +102,7 @@ class strix():
             elif lead == '*':
                 if header == "NODE":
                     itype = 1
-                elif header == "ELEMENT":
+                elif header == "ELEMENT_SOLID":
                     itype = 2
                 elif header == "BOUNDARY_CONDITION":
                     itype = 3
@@ -127,6 +128,8 @@ class strix():
                     #if 10 args, its a hex8
                     if nargs == 10:
                         self.elements.append(hex8(cnvt))
+                    elif nargs == 6:
+                        self.elements.append(tet4(cnvt))
                 elif itype == 3:
                     self.bcs.append(cnvt)
                 elif itype == 4:
@@ -189,6 +192,7 @@ class strix():
         f = open (self.fdir,'w')
         f.write (self.header()+'\n')
         f.write (self.title+'\n')
+        f.write ("Simulation start - "+datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")+'\n\n')
         f.close()
          
         #number of nodes (for matricies)
@@ -260,8 +264,8 @@ class strix():
             
             #generate list of element initial positions and displacements
             cntr = 0;
-            U = np.zeros((8,3))
-            P0 = np.zeros((8,3))
+            U = np.zeros((ele.nnum,3))
+            P0 = np.zeros((ele.nnum,3))
             for nid in nlist:
                 P0[cntr][:] = self.n0[nid][1:]
                 U[cntr][:] = self.u[nid][:]
@@ -317,16 +321,16 @@ class strix():
             
             #generate list of element initial positions and displacements
             cntr = 0;
-            U = np.zeros((8,3))
-            P0 = np.zeros((8,3))
+            U = np.zeros((ele.nnum,3))
+            P0 = np.zeros((ele.nnum,3))
             for nid in nlist:
                 P0[cntr][:] = self.n0[nid][1:]
                 U[cntr][:] = self.u[nid][:]
                 cntr+=1
-            
+                
             # do not run element update until all variables are primed
             if inc > 0:
-                ele.update(0.5,mat,U,U+P0)
+                ele.update(0.5,mat,P0+U,U)
     
             
     ### TRANSLATION FUNCTIONS
@@ -380,8 +384,8 @@ class strix():
             
             #generate list of element initial positions and displacements
             cntr = 0;
-            U = np.zeros((8,3))
-            P0 = np.zeros((8,3))
+            U = np.zeros((ele.nnum,3))
+            P0 = np.zeros((ele.nnum,3))
             for nid in nlist:
                 P0[cntr][:] = self.n0[nid][1:]
                 U[cntr][:] = self.u[nid][:]
