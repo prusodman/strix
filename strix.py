@@ -3,7 +3,7 @@
 # \__ \ | | |   /| | >  <  | () | () |
 # |___/ |_| |_|_\___/_/\_\  \__\_/__/ 
 #
-# STRIX SOLVER  v0.4
+# STRIX SOLVER  v0.4.1
 # ==================
 # Developed by Prusodman Sathananthan
 # March 17th, 2024 (St. Paddy's Day lol)
@@ -14,10 +14,11 @@
 #
 # CHANGELOG
 # =========
-# v0.1 - 20240317 __ Initial Creation
-# v0.2 - 20240323 __ Completed Single Element Logic
-# v0.3 - 20240523 __ Added input deck functionality + file output
-# v0.4 - 20240524 __ Redid explicit loop (MASSIVE CHANGES)
+# v0.1      - 20240317 __ Initial Creation
+# v0.2      - 20240323 __ Completed Single Element Logic
+# v0.3      - 20240523 __ Added input deck functionality + file output
+# v0.4      - 20240524 __ Redid explicit loop (MASSIVE CHANGES)
+# v0.4.1    - 20240606 __ Added tet support
 #
 # X - Done
 # * - In Progress
@@ -450,4 +451,4 @@ class strix():
                '  \__ \ | | |   /| | >  <  | () | () | '+'\n'+\
                '  |___/ |_| |_|_\___/_/\_\  \__\_/__/  '+'\n'+\
                '  ==================================== '+'\n'+\
-               '  Solver Version - 0.4                 '+'\n'
+               '  Solver Version - 0.4.1                 '+'\n'
