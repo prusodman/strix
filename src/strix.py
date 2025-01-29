@@ -39,6 +39,7 @@
 #
 #
 #
+import os
 import numpy as np
 import time
 import datetime
@@ -54,11 +55,6 @@ from elements import *
 
 class strix():
     # Intialization of solver
-    # Variables
-    # n0 = past nodal values
-    # n1 = present nodal values
-    # elements = list of elements in problem
-    # bcs = list of bcs in problem
     def __init__(self):
         self.title = ""
         
@@ -66,20 +62,20 @@ class strix():
         self.u = [] #displacement
         self.v = [] #velocity
         self.a = [] #acceleration
-        self.mass = []
+        self.mass = [] #mass
         
-        self.Fint = []
-        self.Fext = []
+        self.Fint = [] #internal forces
+        self.Fext = [] #external forces
         
-        self.elements = []
-        self.bcs = []
-        self.materials = []
+        self.elements = [] #elements
+        self.bcs = [] #boundary conditions
+        self.materials = [] #material list
         
-        self.dt = 0.0
-        self.Tf = 0.0
-        self.T = 0.0
-        self.fout = 0.0
-        self.fdir = ""
+        self.dt = 0.0 #timestep
+        self.Tf = 0.0 #termination time
+        self.T = 0.0  #simulation time
+        self.fout = 0.0 # output frequency
+        self.fdir = "" # output directory
     
     def read_file (self,fname):
         deck = open (fname,'r')
@@ -190,11 +186,12 @@ class strix():
         print (self.header())
         print("\n",self.title)
         
-        f = open (self.fdir,'w')
-        f.write (self.header()+'\n')
-        f.write (self.title+'\n')
-        f.write ("Simulation start - "+datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")+'\n\n')
-        f.close()
+        os.makedirs(os.path.dirname(self.fdir), exist_ok=True)
+        with open(self.fdir, "w") as f:
+            f.write (self.header()+'\n')
+            f.write (self.title+'\n')
+            f.write ("Simulation start - "+datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")+'\n\n')
+            f.close()
          
         #number of nodes (for matricies)
         nnum = len(self.n0)

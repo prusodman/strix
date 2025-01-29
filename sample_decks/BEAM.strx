@@ -3,7 +3,7 @@ Cantilever beam
 *CONTROL_TIME
 0.0001
 *CONTROL_OUTPUT
-100,../output/BEAM.file
+100,output/BEAM.file
 *NODE
 1,0,0,0
 2,1,0,0
