@@ -40,6 +40,7 @@
 #
 #
 import os
+import sys
 import numpy as np
 import time
 import datetime
@@ -76,70 +77,76 @@ class strix():
         self.T = 0.0  #simulation time
         self.fout = 0.0 # output frequency
         self.fdir = "" # output directory
+        self.outflag = 0
     
     def read_file (self,fname):
-        deck = open (fname,'r')
-        lines = deck.readlines()
-        #input type
-        # 0 = none
-        # 1 = node
-        # 2 = element
-        # 3 = BC
-        # 4 = material
-        # 1x = controls
-        # 2x = outputs
-        # 99 = title
-        itype = 0
-        count = 0 
-        for line in lines:
-            lead = line[0]
-            header = line[1:].rstrip()
-            if lead == '$':
-                pass
-            elif lead == '*':
-                if header == "NODE":
-                    itype = 1
-                elif header == "ELEMENT_SOLID":
-                    itype = 2
-                elif header == "BOUNDARY_CONDITION":
-                    itype = 3
-                elif header == "MATERIAL":
-                    itype = 4
-                elif header == "CONTROL_TIME":
-                    itype = 10
-                elif header == "CONTROL_OUTPUT":
-                    itype = 11
-                elif header == "OUTPUT_ELEMENT":
-                    itype = 20
-                elif header == "TITLE":
-                    itype = 99
+        try:
+            deck = open (fname,'r')
+            lines = deck.readlines()
+            #input type
+            # 0 = none
+            # 1 = node
+            # 2 = element
+            # 3 = BC
+            # 4 = material
+            # 1x = controls
+            # 2x = outputs
+            # 99 = title
+            itype = 0
+            count = 0 
+            for line in lines:
+                lead = line[0]
+                header = line[1:].rstrip()
+                if lead == '$':
+                    pass
+                elif lead == '*':
+                    if header == "NODE":
+                        itype = 1
+                    elif header == "ELEMENT_SOLID":
+                        itype = 2
+                    elif header == "BOUNDARY_CONDITION":
+                        itype = 3
+                    elif header == "MATERIAL":
+                        itype = 4
+                    elif header == "CONTROL_TIME":
+                        itype = 10
+                    elif header == "CONTROL_OUTPUT":
+                        itype = 11
+                    elif header == "OUTPUT_ELEMENT":
+                        itype = 20
+                    elif header == "TITLE":
+                        itype = 99
+                    else:
+                        itype = 0
                 else:
-                    itype = 0
-            else:
-                data = line.rstrip().split(',')
-                cnvt = [tops.convert(flag) for flag in data]
-                if itype == 1:
-                    self.n0.append(cnvt)
-                elif itype == 2:
-                    nargs = len (cnvt)
-                    #if 10 args, its a hex8
-                    if nargs == 10:
-                        self.elements.append(hex8(cnvt))
-                    elif nargs == 6:
-                        self.elements.append(tet4(cnvt))
-                elif itype == 3:
-                    self.bcs.append(cnvt)
-                elif itype == 4:
-                    self.materials.append(material(cnvt[0],cnvt[1],cnvt[2],cnvt[3:]))
-                elif itype == 10:
-                    self.Tf = float(cnvt[0])
-                elif itype == 11:
-                    self.fout = cnvt[0]
-                    self.fdir = cnvt[1]
-                elif itype == 20:
-                    self.sets.append(cnvt)
-                elif itype == 99:
-                    self.title = line.rstrip()
+                    data = line.rstrip().split(',')
+                    cnvt = [tops.convert(flag) for flag in data]
+                    if itype == 1:
+                        self.n0.append(cnvt)
+                    elif itype == 2:
+                        nargs = len (cnvt)
+                        #if 10 args, its a hex8
+                        if nargs == 10:
+                            self.elements.append(hex8(cnvt))
+                        elif nargs == 6:
+                            self.elements.append(tet4(cnvt))
+                    elif itype == 3:
+                        self.bcs.append(cnvt)
+                    elif itype == 4:
+                        self.materials.append(material(cnvt[0],cnvt[1],cnvt[2],cnvt[3:]))
+                    elif itype == 10:
+                        self.Tf = float(cnvt[0])
+                    elif itype == 11:
+                        self.fout = cnvt[0]
+                        self.fdir = cnvt[1]
+                        self.outflag = int(cnvt [2], 2)
+                    elif itype == 20:
+                        self.sets.append(cnvt) #some kind of functionality I didn't implement yet? Element set
+                    elif itype == 99:
+                        self.title = line.rstrip()
+        except IOError as e:
+            print ("File IO Error:",e)
+            sys.exit(1)
         
             
     ### STRIX SOLVERS ###
@@ -415,29 +422,33 @@ class strix():
         #    f.write('\t'.join(output))
         #    f.write('\n')
         
-        for i in range (len(self.n0)):
-            output = ["{:.5e}".format(x).rjust(14) for x in P[i,:]]
-            f.write('N'+str(nnum[i])+'\t')
-            f.write('\t'.join(output))
-            f.write('\n')
+        if self.outflag & 0b00000001:
+            for i in range (len(self.n0)):
+                output = ["{:.5e}".format(x).rjust(14) for x in P[i,:]]
+                f.write('N'+str(nnum[i])+'\t')
+                f.write('\t'.join(output))
+                f.write('\n')
+                
+        if self.outflag & 0b00000010:
+            for i in range (len(self.n0)):
+                output = ["{:.5e}".format(x).rjust(14) for x in self.u[i,:]]
+                f.write('U'+str(nnum[i])+'\t')
+                f.write('\t'.join(output))
+                f.write('\n')
+                
+        if self.outflag & 0b00000100:
+            for i in range (len(self.n0)):
+                output = ["{:.5e}".format(x).rjust(14) for x in self.Fext[i,:]]
+                f.write('FE'+str(nnum[i])+'\t')
+                f.write('\t'.join(output))
+                f.write('\n')
         
-        for i in range (len(self.n0)):
-            output = ["{:.5e}".format(x).rjust(14) for x in self.u[i,:]]
-            f.write('U'+str(nnum[i])+'\t')
-            f.write('\t'.join(output))
-            f.write('\n')
-        
-        for i in range (len(self.n0)):
-            output = ["{:.5e}".format(x).rjust(14) for x in self.Fext[i,:]]
-            f.write('FE'+str(nnum[i])+'\t')
-            f.write('\t'.join(output))
-            f.write('\n')
-        
-        for i in range (len(self.n0)):
-            output = ["{:.5e}".format(x).rjust(14) for x in self.Fint[i,:]]
-            f.write('FI'+str(nnum[i])+'\t')
-            f.write('\t'.join(output))
-            f.write('\n')
+        if self.outflag & 0b00001000:
+            for i in range (len(self.n0)):
+                output = ["{:.5e}".format(x).rjust(14) for x in self.Fint[i,:]]
+                f.write('FI'+str(nnum[i])+'\t')
+                f.write('\t'.join(output))
+                f.write('\n')
         
         f.write("\n")
         f.close()
