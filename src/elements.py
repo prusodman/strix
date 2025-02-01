@@ -287,7 +287,7 @@ class tet4 (element):
         B1 = np.subtract(P[0],P[3])
         B2 = np.subtract(P[1],P[3])
         B3 = np.subtract(P[2],P[3])
-        print (P)
+        #print (P)
         return np.abs(np.dot(B1,np.cross(B2,B3)))/6.0
     
     def get_mass (self,mat,P):

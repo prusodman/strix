@@ -1,9 +1,9 @@
 *TITLE
 Cantilever beam
 *CONTROL_TIME
-1e-6
+1e-4
 *CONTROL_OUTPUT
-1,output/BEAM.file,0b0000010
+1000,output/BEAM/beam,0b0000010
 *NODE
 1,0,0,0
 2,1,0,0

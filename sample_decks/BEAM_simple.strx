@@ -3,7 +3,7 @@ Cantilever beam
 *CONTROL_TIME
 1000e-6
 *CONTROL_OUTPUT
-1000,output/BEAM_simple,0b0000010
+1000,output/BEAM_simple/BS,0b0000010
 *NODE
 1,0,0,0
 2,10,0,0
@@ -36,6 +36,6 @@ Cantilever beam
 4,2,0.0,1
 4,3,0.0,1
 9,2,1.0,2
-10,2,10,2
-11,2,10,2
-12,2,10,2
+10,2,100,2
+11,2,100,2
+12,2,100,2

@@ -3,8 +3,8 @@
 # \__ \ | | |   /| | >  <  | () | () |
 # |___/ |_| |_|_\___/_/\_\  \__\_/__/ 
 #
-# STRIX SOLVER  v0.4.1
-# ==================
+# STRIX SOLVER  v0.4.2
+# ====================
 # Developed by Prusodman Sathananthan
 # March 17th, 2024 (St. Paddy's Day lol)
 #
@@ -19,6 +19,7 @@
 # v0.3      - 20240523 __ Added input deck functionality + file output
 # v0.4      - 20240524 __ Redid explicit loop (MASSIVE CHANGES)
 # v0.4.1    - 20240606 __ Added tet support
+# v0.4.2    - 20250131 __ Added bulk viscosity + PARAVIEW OUTPUT SUPPORT!
 #
 # X - Done
 # * - In Progress
@@ -31,12 +32,12 @@
 # - make stress update method                       [X]
 # - understand and develop explicit loop            [X]
 #   > determine internal forces in element          [X]
-#   > compute external forces                       [ ]
+#   > compute external forces                       [X]
 # - get strain and strain rate to feed into UMATS   [X]
 # - develop elastic UMAT                            [X]
 # - refactor and clean up                           [O]
 # - comment what you have so far...                 [O]
-#
+# - VERIFY ALL OF THIS...                           [O]
 #
 #
 import os
@@ -498,7 +499,7 @@ class strix():
                 if type(ele) is hex8:
                     f.write("12\n")
                 elif type (ele) is tet4:
-                    f.write("14\n")
+                    f.write("10\n")
                 
     def header (self):
         return '   ___ _____ ___ _____  __   __   __   '+'\n'+\
@@ -506,4 +507,4 @@ class strix():
                '  \__ \ | | |   /| | >  <  | () | () | '+'\n'+\
                '  |___/ |_| |_|_\___/_/\_\  \__\_/__/  '+'\n'+\
                '  ==================================== '+'\n'+\
-               '  Solver Version - 0.4.1                 '+'\n'
+               '  Solver Version - 0.4.2                 '+'\n'
