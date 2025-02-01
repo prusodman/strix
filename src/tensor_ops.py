@@ -1,4 +1,5 @@
 import numpy as np
+import math
 #
 #  an mxn matrix [m][n]
 #  
@@ -18,6 +19,9 @@ def second_to_voigt (a):
     
 def voigt_to_second (a):
     return [[a[0],a[5],a[4]],[a[5],a[1],a[3]],[a[4],a[3],a[2]]]
+
+def eff_strain_v (a):
+    return math.sqrt (2.0*(a[0]**2+a[1]**2+a[2]**2)/3.0 + (a[3]**2+a[4]**2+a[5]**2)/3.0)
 
 def convert(val):
     possible = [str, int, float]

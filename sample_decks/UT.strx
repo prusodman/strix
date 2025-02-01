@@ -1,9 +1,9 @@
 *TITLE
 Uniaxial Tension Test Case
 *CONTROL_TIME
-0.0001
+1000e-6
 *CONTROL_OUTPUT
-1000,../output/UT.file
+1000,output/UT/UT,0b0000010
 *NODE
 1,0,0,0
 2,1,0,0

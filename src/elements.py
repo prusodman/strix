@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import copy
 import tensor_ops as tops
 from materials import *
@@ -29,6 +30,7 @@ class element:
         self.sig = np.zeros((3,3))
         #define space to place history vars
         self.hisv = []*8
+        self.clen = 0
     
     #update element stresses and strains based on deformation gradient
     def update (self,b,mat,P,U):
@@ -57,9 +59,25 @@ class element:
         sig0_v = tops.second_to_voigt(self.sig)
         sig1_v = umat(mat.mat,deps_v,sig0_v,mat.cm,self.hisv)
         
+        #TODO: need to update characteristic length
+        c = mat.get_c();
+        clen = 1;
+        
+        #BULK VISCOSITY IMPLEMENTATION
+        Q1 = 1.50
+        Q2 = 0.06
+        
+        #TODO: I am currently applying this to the strain rate tensor
+        # I think this needs to be a scalar and added as a pressure
+        # I think, I really don't understand bulk viscosity implementation
+        effd = tops.eff_strain_v (deps_v)
+        q = mat.density*clen*(Q1*clen*effd**2-Q2*c*effd)
+        q_v = [q,q,q,0,0,0]
+        
         #OBJECTIVE UPDATE OF STRESS
-        self.sig = tops.voigt_to_second(sig1_v)
+        self.sig = tops.voigt_to_second(sig1_v+q_v)
         self.sig = self.sig - self.sig @ R + R * self.sig
+        
         
 
         
@@ -228,6 +246,11 @@ class hex8 (element):
         S = np.array(tops.second_to_voigt(self.sig))
         f = gauss_weight*np.dot(BT,S)*detJ
         return f.reshape(8,3)
+    
+    #TODO: update
+    def update_clen (self,P):
+        #lc = volume / aemax
+        pass
         
 
 #
@@ -321,3 +344,7 @@ class tet4 (element):
         #return def. grad
         # F = I + [du/dr]*inv([dX/dr])
         return np.identity(3) +  dispDbasis @ np.linalg.inv(posiDbasis)
+
+    def update_clen (self,P):
+        #lc = minimum altitude
+        pass

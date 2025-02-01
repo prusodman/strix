@@ -181,6 +181,7 @@ class strix():
             #output data
             if inc%self.fout == 0:
                 self.output_data(inc)
+                self.output_vtk(inc)
                 
             #INCREMENT time
             inc += 1
@@ -188,6 +189,7 @@ class strix():
             
         print ("Finished solving in ",round(toc-tic,1),"s")
         self.output_data(inc)
+        self.output_vtk(inc)
         
     def initialize(self):
         print (self.header())
@@ -452,6 +454,51 @@ class strix():
         
         f.write("\n")
         f.close()
+    
+    def output_vtk (self,inc):
+        P0 = np.array(self.n0)
+        P = np.add(P0[:,1:],self.u)
+        conn = 0
+        
+        for ele in self.elements:
+            if type(ele) is hex8:
+                conn += 9
+            elif type (ele) is tet4:
+                conn += 5
+        
+        os.makedirs(os.path.dirname(self.fdir), exist_ok=True)
+        with open(self.fdir+"_"+str(inc)+".vtk", "w") as f:
+            f.write ("# vtk DataFile Version 4.2\n")          
+            f.write ("vtk output\n")
+            f.write ("ASCII\n")
+            f.write ("DATASET UNSTRUCTURED_GRID\n")
+            f.write ("POINTS "+str(len(self.n0))+" double\n")
+        
+            for i in range (len(self.n0)):
+                output = ["{:.5e}".format(x) for x in P[i,:]]
+                f.write(' '.join(output))
+                f.write('\n')
+                
+            #currently only set up for hex output
+            f.write ("\nCELLS "+str(len(self.elements))+" "+str(conn)+"\n")
+            
+            for ele in self.elements:
+                nlist = self.get_nkey_in_element(ele.eid)
+                output = [str(x) for x in nlist]
+                if type(ele) is hex8:
+                    f.write("8 ")
+                elif type (ele) is tet4:
+                    f.write("4 ")
+                f.write(' '.join(output))
+                f.write('\n')
+                
+            f.write ("\nCELL_TYPES "+str(len(self.elements))+"\n")
+            
+            for ele in self.elements:
+                if type(ele) is hex8:
+                    f.write("12\n")
+                elif type (ele) is tet4:
+                    f.write("14\n")
                 
     def header (self):
         return '   ___ _____ ___ _____  __   __   __   '+'\n'+\
