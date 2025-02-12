@@ -185,18 +185,16 @@ class hex8 (element):
                            0.125*(1+r)*(1+s),
                            0.125*(1-r)*(1+s)])
         
-        return [dN_dr,dN_ds,dN_dt]
+        return np.array([dN_dr,dN_ds,dN_dt])
 
     #Jacobian matrix
-    def get_J (self,r,s,t):
-        [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)
-        scl = np.array([[-1, 1, 1, -1, -1, 1, 1, -1],
-                        [-1, -1, 1, 1, -1, -1, 1, 1],
-                        [-1, -1, -1, -1, 1, 1, 1, 1]])
-        J = np.array([dN_dr, dN_ds, dN_dt]).dot(np.transpose(scl))
+    def get_J (self,r,s,t,P):
+        dN = self.get_dN (0,0,0)
+        J = dN @ np.array(P)  # (3,8) * (8,3) = (3,3)
         return J
 
-        #B matrix (strain displacement), (chat GPT)
+    
+    #B matrix (strain displacement), (chat GPT)
     #B = LN = 
     def get_B (self,r,s,t):
         [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)
@@ -213,6 +211,7 @@ class hex8 (element):
             B[5, i*3 + 2] = dN_dr[i]
         return B
     
+
     #get deformation gradient using method described here:
     #https://www.continuummechanics.org/finiteelementmapping.html
     #I NEED TO CALCULATE THIS
@@ -247,15 +246,16 @@ class hex8 (element):
         # F = I + [du/dr]*inv([dX/dr])
         return np.identity(3) +  dispDbasis @ np.linalg.inv(posiDbasis)
     
-    #is detJ actually the volume (I DON'T THINK IT IS)
     def get_force (self,U,P):
         #weight of each gauss point for single integration point element
-        gauss_weight = 1.0
+        gauss_weight = 8.0
         ## my super basic understanding here
         ## stress*strain = volumetric energy / displacement = Force (Work = F*s)
         ## super dumbed down, there are tensor expressions for these
+        J = self.get_J (0,0,0,P)
+        detJ = np.linalg.det(J)
+        S = np.array(tops.second_to_voigt(self.sig))
         BT = np.transpose(self.get_B (0,0,0))
-        detJ = np.linalg.det(self.get_J (0,0,0))
         S = np.array(tops.second_to_voigt(self.sig))
         f = gauss_weight*np.dot(BT,S)*detJ
         return f.reshape(8,3)

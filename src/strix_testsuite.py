@@ -104,6 +104,12 @@ def main():
     print (hexa.sig)
     print ("Element Forces:")
     print (hexa.get_force(U_UT,P0))
+    print ("Calculated Force:")
+    G = 207000 / (2.0*(1+0.3))
+    gam = 0.1 / 10
+    tau = G * gam
+    FS = tau * 10 * 10
+    print (str(FS)+" N")
     
     print ("Done HEX Element...")
     
