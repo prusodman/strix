@@ -127,10 +127,23 @@ class hex8 (element):
     def get_nmass (self,mat,P):
         return self.get_mass(mat,P)/8.0
     
+    #lc = volume / aemax
     def get_dt (self,mat,P):
-        V = self.get_volume(self,P)
+        V = self.get_volume(P)
         
-    
+        area = np.zeros(6)
+        area [0] = tops.get_face_area (P[0],P[1],P[4])
+        area [1] = tops.get_face_area (P[1],P[5],P[2])
+        area [2] = tops.get_face_area (P[2],P[7],P[3])
+        area [3] = tops.get_face_area (P[3],P[6],P[0])
+        area [4] = tops.get_face_area (P[4],P[5],P[6])
+        area [5] = tops.get_face_area (P[5],P[1],P[3])
+        
+        mina = min (area)
+        lc = V/mina
+        c = mat.get_c ()
+        return lc/c
+        
     #get shape function wrt natural coordinates (chat GPT)
     def get_N (self,r,s,t):
         N = np.array([(0.125)*(1-r)*(1-s)*(1-t),
@@ -182,8 +195,8 @@ class hex8 (element):
                         [-1, -1, -1, -1, 1, 1, 1, 1]])
         J = np.array([dN_dr, dN_ds, dN_dt]).dot(np.transpose(scl))
         return J
-    
-    #B matrix (strain displacement), (chat GPT)
+
+        #B matrix (strain displacement), (chat GPT)
     #B = LN = 
     def get_B (self,r,s,t):
         [dN_dr,dN_ds,dN_dt] = self.get_dN (r,s,t)
@@ -246,14 +259,7 @@ class hex8 (element):
         S = np.array(tops.second_to_voigt(self.sig))
         f = gauss_weight*np.dot(BT,S)*detJ
         return f.reshape(8,3)
-    
-    #TODO: update
-    def update_clen (self,P):
-        #lc = volume / aemax
-        pass
-        
-
-#
+#Z
 #
 #               TET 4 ELEMENT
 #               =============
@@ -345,6 +351,12 @@ class tet4 (element):
         # F = I + [du/dr]*inv([dX/dr])
         return np.identity(3) +  dispDbasis @ np.linalg.inv(posiDbasis)
 
-    def update_clen (self,P):
-        #lc = minimum altitude
-        pass
+    
+    #lc = min altitude
+    def get_dt (self,mat,P):
+        
+        V = self.get_volume(P)
+        
+        lc = V/mina
+        c = mat.get_c ()
+        return lc/c

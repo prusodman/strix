@@ -20,12 +20,15 @@ def main():
     print ("Done MATERIALS...\n")
     
     
-    #UNIT TEST: HEX ELEMENT
+    #UNIT TEST 2a: HEX ELEMENT
     print ("Testing HEX Element...")
     print ("Creating 10x10x10 element")
     
     n0 = [] #nodes
     P0 = [] #position
+    U_UT = [] #displacement
+    U_SS = [] #displacement
+
     n0.append([1,0,0,0])
     n0.append([2,10,0,0])
     n0.append([3,10,10,0])
@@ -34,6 +37,24 @@ def main():
     n0.append([6,10,0,10])
     n0.append([7,10,10,10])
     n0.append([8,0,10,10])
+    
+    U_UT.append([0,0,0])
+    U_UT.append([-0.03,0,0])
+    U_UT.append([-0.03,-0.03,0])
+    U_UT.append([0,-0.03,0])
+    U_UT.append([0,0,0.1])
+    U_UT.append([-0.03,0,0.1])
+    U_UT.append([-0.03,-0.03,0.1])
+    U_UT.append([0,-0.03,0.1])
+
+    U_SS.append([0,0,0])
+    U_SS.append([0,0,0])
+    U_SS.append([0,0,0])
+    U_SS.append([0,0,0])
+    U_SS.append([0,0.1,0])
+    U_SS.append([0,0.1,0])
+    U_SS.append([0,0.1,0])
+    U_SS.append([0,0.1,0])
     
     
     #generate list of element positions
@@ -56,12 +77,34 @@ def main():
         print ("--PASS--")
     else:
         print ("--FAIL--")
+        
+    print ("Calculating timestep...")    
+    dt = round(hexa.get_dt(steel,P0)*1e6,3)
+    print ("dt: "+str(dt)+"us")
+    if (dt == 1.673):
+        print ("--PASS--")
+    else:
+        print ("--FAIL--")
     
-    def get_nmass (self,mat,P):
-        return self.get_mass(mat,P)/8.0
+    print ("Verifying update...") 
+    print ("Uniaxial tension 1% strain")    
+    hexa.update (0.5,steel,P0,U_UT)
+    print ("Element Stress:")
+    print (hexa.sig)
+    print ("Calculated Stress:")
+    print (str(207000*0.01)+" MPa")
+    print ("Element Forces:")
+    print (hexa.get_force(U_UT,P0))
+    print ("Calculated Force:")
+    print (str(207000*0.01*10*10)+" N")
+
+    print ("\nSimple shear 1% strain")    
+    hexa.update (0.5,steel,P0,U_SS)
+    print ("Element Stress:")
+    print (hexa.sig)
+    print ("Element Forces:")
+    print (hexa.get_force(U_UT,P0))
     
-    def get_dt (self,mat,P):
-        V = self.get_volume(self,P)
     print ("Done HEX Element...")
     
     '''

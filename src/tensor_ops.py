@@ -34,3 +34,8 @@ def convert(val):
         if str(result) == val and type(result) is not str:
             return result
     return val
+
+def get_face_area (A,B,D):
+    AB = np.array(A) - np.array(B)
+    AD = np.array(A) - np.array(D)
+    return np.linalg.norm(np.cross(AB,AD))

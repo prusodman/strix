@@ -319,6 +319,7 @@ class strix():
             self.a[ind] = (self.Fext[ind] - self.Fint[ind])/self.mass[ind]
 
     def update_elements (self,inc):
+        dts = []
         for ele in self.elements:
             #get material of element
             matid = self.get_materialkey (ele.mid)
@@ -339,6 +340,10 @@ class strix():
             # do not run element update until all variables are primed
             if inc > 0:
                 ele.update(0.5,mat,P0+U,U)
+            
+            dts.append(ele.get_dt(mat,P0))
+        self.dt = 0.9*min (dts)
+            
     
             
     ### TRANSLATION FUNCTIONS
