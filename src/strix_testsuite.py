@@ -96,7 +96,7 @@ def main():
     print ("Element Forces:")
     print (hexa.get_force(U_UT,P0))
     print ("Calculated Force:")
-    print (str(207000*0.01*10*10)+" N")
+    print (str(207000*0.01*10*10/4)+" N")
 
     print ("\nSimple shear 1% strain")    
     hexa.update (0.5,steel,P0,U_SS)
@@ -109,41 +109,36 @@ def main():
     gam = 0.1 / 10
     tau = G * gam
     FS = tau * 10 * 10
-    print (str(FS)+" N")
+    FN = FS / 4
+    print (str(FN)+" N")
     
     print ("Done HEX Element...")
     
     '''
     #SYSTEM TEST 1: Uniaxial tension test, single element
     p = st.strix()
-    p.read_file("tests/SYSTEM_LEVEL_TEST/01_UT.strx")
+    p.read_file("tests/01_UT.strx")
     p.strix_explicit(p.Tf)
     del p
-    '''
     
-    '''
     #SYSTEM TEST 2: Simple shear, single element
     p = st.strix()
-    p.read_file("tests/SYSTEM_LEVEL_TEST/02_SS.strx")
+    p.read_file("tests/02_SS.strx")
     p.strix_explicit(p.Tf)
     del p
-    '''
     
-    '''
     #SYSTEM TEST 3: Tet element test, uniaxial tension
     p = st.strix()
-    p.read_file("tests/SYSTEM_LEVEL_TEST/03_TET.strx")
+    p.read_file("tests/03_TET.strx")
     p.strix_explicit(p.Tf)
     del p
-    '''
-    
     '''
     #SYSTEM TEST 4: Two element beam, connectivity
     p = st.strix()
-    p.read_file("tests/SYSTEM_LEVEL_TEST/04_BEAM_2H.strx")
+    p.read_file("tests/04_BEAM_2H.strx")
     p.strix_explicit(p.Tf)
     del p
-    '''
+    
 
 if __name__ == "__main__":
     main()

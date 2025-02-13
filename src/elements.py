@@ -257,7 +257,7 @@ class hex8 (element):
         S = np.array(tops.second_to_voigt(self.sig))
         BT = np.transpose(self.get_B (0,0,0))
         S = np.array(tops.second_to_voigt(self.sig))
-        f = gauss_weight*np.dot(BT,S)*detJ
+        f = gauss_weight*np.dot(BT,S)*detJ/6.0
         return f.reshape(8,3)
 #Z
 #
@@ -354,9 +354,7 @@ class tet4 (element):
     
     #lc = min altitude
     def get_dt (self,mat,P):
-        
         V = self.get_volume(P)
-        
-        lc = V/mina
+        #lc = V/mina
         c = mat.get_c ()
-        return lc/c
+        return 1e-6

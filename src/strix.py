@@ -342,7 +342,7 @@ class strix():
                 ele.update(0.5,mat,P0+U,U)
             
             dts.append(ele.get_dt(mat,P0))
-        self.dt = 0.9*min (dts)
+        self.dt = 0.1*min (dts)
             
     
             
