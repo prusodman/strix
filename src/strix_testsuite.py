@@ -106,7 +106,7 @@ def main():
     print (hexa.get_force(U_UT,P0))
     print ("Calculated Force:")
     G = 207000 / (2.0*(1+0.3))
-    gam = 0.1 / 10
+    gam = 0.1 / 10 / 2
     tau = G * gam
     FS = tau * 10 * 10
     FN = FS / 4
@@ -133,6 +133,7 @@ def main():
     p.strix_explicit(p.Tf)
     del p
     '''
+    
     #SYSTEM TEST 4: Two element beam, connectivity
     p = st.strix()
     p.read_file("tests/04_BEAM_2H.strx")

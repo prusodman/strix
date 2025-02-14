@@ -157,7 +157,7 @@ class hex8 (element):
         return N
     
     #shape function derivatives with respect to natural coordinates, (chat GPT)    
-    def get_dN (self,r,s,t):
+    def get_dN_dxi (self,r,s,t):
         dN_dr = np.array([-0.125*(1-s)*(1-t),
                            0.125*(1-s)*(1-t),
                            0.125*(1+s)*(1-t),
@@ -189,11 +189,11 @@ class hex8 (element):
 
     #Jacobian matrix
     def get_J (self,r,s,t,P):
-        dN = self.get_dN (0,0,0)
-        J = dN @ np.array(P)  # (3,8) * (8,3) = (3,3)
+        dN = self.get_dN_dxi (0,0,0)
+        J = np.dot(dN,np.array(P))  # (3,8) * (8,3) = (3,3)
         return J
 
-    
+    '''
     #B matrix (strain displacement), (chat GPT)
     #B = LN = 
     def get_B (self,r,s,t):
@@ -210,7 +210,20 @@ class hex8 (element):
             B[5, i*3] = dN_dt[i]
             B[5, i*3 + 2] = dN_dr[i]
         return B
-    
+    '''
+
+    def get_B(self,dN_dx):
+        B = np.zeros((6, 24))
+        for i in range(8):
+            B[:, 3*i:3*(i+1)] = np.array([
+                [dN_dx[i, 0], 0, 0],
+                [0, dN_dx[i, 1], 0],
+                [0, 0, dN_dx[i, 2]],
+                [dN_dx[i, 1], dN_dx[i, 0], 0],
+                [0, dN_dx[i, 2], dN_dx[i, 1]],
+                [dN_dx[i, 2], 0, dN_dx[i, 0]]
+            ])
+        return B
 
     #get deformation gradient using method described here:
     #https://www.continuummechanics.org/finiteelementmapping.html
@@ -253,11 +266,15 @@ class hex8 (element):
         ## stress*strain = volumetric energy / displacement = Force (Work = F*s)
         ## super dumbed down, there are tensor expressions for these
         J = self.get_J (0,0,0,P)
+        J_inv = np.linalg.inv(J)
         detJ = np.linalg.det(J)
+        dN_dxi = self.get_dN_dxi (0,0,0)
+
+        dN_dx = np.dot(J_inv.T,dN_dxi).T
+        B = self.get_B(dN_dx)
         S = np.array(tops.second_to_voigt(self.sig))
-        BT = np.transpose(self.get_B (0,0,0))
-        S = np.array(tops.second_to_voigt(self.sig))
-        f = gauss_weight*np.dot(BT,S)*detJ/6.0
+        V = abs(detJ)
+        f = 8.0*np.dot(B.T,S) * V 
         return f.reshape(8,3)
 #Z
 #
